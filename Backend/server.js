@@ -12,8 +12,8 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://restaurant-billing-system-frontend-ten.vercel.app',
-  'https://restaurant-billing-system-backend-khaki.vercel.app',
+  'https://restaurant-billing-frontend.vercel.app/',
+  'http://localhost:5175',
   // Allow from environment variable (comma-separated)
   ...(process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*' 
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) 
