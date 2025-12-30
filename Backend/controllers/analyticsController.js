@@ -195,13 +195,11 @@ export const getAnalytics = async (req, res) => {
 
     try {
       // Delivery orders count for the period
+      // Only count orders with billType === 'Delivery'
       deliveryOrdersStats = await Bill.countDocuments({
         createdAt: { $gte: startDate, $lte: endDate },
         status: 'Paid',
-        $or: [
-          { billType: 'Delivery' },
-          { orderSource: { $exists: true, $ne: null } }
-        ]
+        billType: 'Delivery'
       });
     } catch (error) {
       console.error('Error counting delivery orders:', error);

@@ -64,6 +64,10 @@ export const saveOrder = async (req, res) => {
       if (billType === 'Delivery') {
         order.orderSource = orderSource || 'Direct';
         order.deliveryStatus = 'Pending';
+      } else {
+        // Remove orderSource for Dine-In and Takeaway orders
+        order.orderSource = undefined;
+        order.deliveryStatus = undefined;
       }
       
       order.subtotal = subtotal;
@@ -84,11 +88,12 @@ export const saveOrder = async (req, res) => {
         kitchenNotes
       };
 
-      // Add delivery fields if delivery order
+      // Add delivery fields only if delivery order
       if (billType === 'Delivery') {
         orderData.orderSource = orderSource || 'Direct';
         orderData.deliveryStatus = 'Pending';
       }
+      // For Dine-In and Takeaway, orderSource should not be set (undefined)
 
       order = await Bill.create(orderData);
     }
@@ -408,17 +413,42 @@ export const getDailyStats = async (req, res) => {
 
     try {
       // Get delivery orders count (paid delivery orders today)
+      // Only count orders with billType === 'Delivery'
       deliveryStats = await Bill.countDocuments({
         createdAt: { $gte: today, $lt: tomorrow },
         status: 'Paid',
-        $or: [
-          { billType: 'Delivery' },
-          { orderSource: { $exists: true, $ne: null } }
-        ]
+        billType: 'Delivery'
       });
     } catch (error) {
       console.error('Error counting delivery orders:', error);
       deliveryStats = 0;
+    }
+
+    let dineInStats = 0;
+    let takeawayStats = 0;
+
+    try {
+      // Get dine-in orders count
+      dineInStats = await Bill.countDocuments({
+        createdAt: { $gte: today, $lt: tomorrow },
+        status: 'Paid',
+        billType: 'Dine-In'
+      });
+    } catch (error) {
+      console.error('Error counting dine-in orders:', error);
+      dineInStats = 0;
+    }
+
+    try {
+      // Get takeaway orders count
+      takeawayStats = await Bill.countDocuments({
+        createdAt: { $gte: today, $lt: tomorrow },
+        status: 'Paid',
+        billType: 'Takeaway'
+      });
+    } catch (error) {
+      console.error('Error counting takeaway orders:', error);
+      takeawayStats = 0;
     }
 
     const result = paidStats[0] || { 
@@ -444,7 +474,9 @@ export const getDailyStats = async (req, res) => {
       totalTax: Number(result.totalTax) || 0,
       paymentMethods: validPaymentStats,
       activeOrders: Number(activeOrders) || 0,
-      deliveryOrders: Number(deliveryStats) || 0
+      deliveryOrders: Number(deliveryStats) || 0,
+      dineInOrders: Number(dineInStats) || 0,
+      takeawayOrders: Number(takeawayStats) || 0
     };
     
     // Cache the result for 30 seconds
