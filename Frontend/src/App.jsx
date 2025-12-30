@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import BillingPage from './components/BillingPage';
-import BillHistory from './components/BillHistory';
-import LoginPage from './components/LoginPage';
-import MenuManagement from './components/MenuManagement';
-import ActiveOrders from './components/ActiveOrders';
-import Analytics from './components/Analytics';
-import Dashboard from './components/Dashboard';
-import Settings from './components/Settings';
-import DeliveryOrders from './components/DeliveryOrders';
+import React, { useState, useEffect, Suspense } from 'react';
+// Lazy load components for performance
+const BillingPage = React.lazy(() => import('./components/BillingPage'));
+const BillHistory = React.lazy(() => import('./components/BillHistory'));
+const LoginPage = React.lazy(() => import('./components/LoginPage'));
+const MenuManagement = React.lazy(() => import('./components/MenuManagement'));
+const ActiveOrders = React.lazy(() => import('./components/ActiveOrders'));
+const Analytics = React.lazy(() => import('./components/Analytics'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const Settings = React.lazy(() => import('./components/Settings'));
+const DeliveryOrders = React.lazy(() => import('./components/DeliveryOrders'));
 import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
@@ -97,22 +98,23 @@ function App() {
   };
 
   const handleViewChange = (newView) => {
-    setSectionLoading(true);
+    // setSectionLoading(true); // Removed manual loading state, relying on Suspense
     setView(newView);
-    // Simulate loading time (1-2 seconds) for better UX
-    setTimeout(() => {
-      setSectionLoading(false);
-    }, 800);
+    // Removed artificial delay
   };
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-background text-text-muted">Loading...</div>;
 
   if (!user) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      </Suspense>
+    );
   }
 
   const getTitle = () => {
-    switch(view) {
+    switch (view) {
       case 'dashboard': return 'Dashboard';
       case 'billing': return 'New Order';
       case 'history': return 'Transaction History';
@@ -138,7 +140,7 @@ function App() {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
-          <button 
+          <button
             onClick={() => handleViewChange('dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'dashboard' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
@@ -164,28 +166,28 @@ function App() {
             <Truck size={20} />
             <span>Delivery Orders</span>
           </button>
-          <button 
+          <button
             onClick={() => handleViewChange('billing')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'billing' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
             <LayoutDashboard size={20} />
             <span>New Order</span>
           </button>
-          <button 
+          <button
             onClick={() => handleViewChange('history')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'history' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
             <History size={20} />
             <span>Bill History</span>
           </button>
-          <button 
+          <button
             onClick={() => handleViewChange('analytics')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'analytics' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
             <BarChart3 size={20} />
             <span>Analytics</span>
           </button>
-          
+
           <button
             onClick={() => handleViewChange('menu')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'menu' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -203,7 +205,7 @@ function App() {
         </nav>
 
         <div className="p-6">
-          <button 
+          <button
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-danger bg-danger/5 hover:bg-danger/10 transition-all font-medium hover:shadow-md"
           >
@@ -224,7 +226,7 @@ function App() {
               </h1>
               <p className="text-sm text-text-muted">Welcome back, {user.username}</p>
             </div>
-            
+
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3 px-2 py-1.5 bg-surface rounded-full shadow-sm pr-4">
                 <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-md">
@@ -240,33 +242,31 @@ function App() {
         )}
 
         <main className="flex-1 overflow-hidden p-6">
-          {sectionLoading ? (
+          <Suspense fallback={
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-4">
                 <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
                 <p className="text-text-muted font-medium">Loading...</p>
               </div>
             </div>
-          ) : (
-            <>
-              {view === 'dashboard' && <Dashboard />}
-              {view === 'orders' && (
-                <ActiveOrders 
-                  onSelectOrder={(tableNo) => {
-                    setSelectedTable(tableNo);
-                    handleViewChange('billing');
-                  }} 
-                  onOrderUpdate={fetchActiveOrdersCount}
-                />
-              )}
-              {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} />}
-              {view === 'history' && <BillHistory />}
-              {view === 'analytics' && <Analytics />}
-              {view === 'menu' && <MenuManagement user={user} />}
-              {view === 'delivery' && <DeliveryOrders />}
-              {view === 'settings' && <Settings />}
-            </>
-          )}
+          }>
+            {view === 'dashboard' && <Dashboard />}
+            {view === 'orders' && (
+              <ActiveOrders
+                onSelectOrder={(tableNo) => {
+                  setSelectedTable(tableNo);
+                  handleViewChange('billing');
+                }}
+                onOrderUpdate={fetchActiveOrdersCount}
+              />
+            )}
+            {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} />}
+            {view === 'history' && <BillHistory />}
+            {view === 'analytics' && <Analytics />}
+            {view === 'menu' && <MenuManagement user={user} />}
+            {view === 'delivery' && <DeliveryOrders />}
+            {view === 'settings' && <Settings />}
+          </Suspense>
         </main>
       </div>
     </div>

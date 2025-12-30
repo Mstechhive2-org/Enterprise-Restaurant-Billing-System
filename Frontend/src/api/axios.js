@@ -28,6 +28,16 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Handle 401 (Unauthorized) - Session invalid/expired -> Logout immediately
+    if (error.response?.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      window.location.reload();
+      return Promise.reject(error);
+    }
+
+    // Handle 403 (Forbidden) - Token expired -> Try Refresh
     if (error.response?.status === 403 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -56,7 +66,7 @@ api.interceptors.response.use(
       }
     }
 
-    // If not a 403 or refresh failed, reject the error
+    // If not a 401/403 or refresh failed, reject the error
     return Promise.reject(error);
   }
 );
