@@ -65,6 +65,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '10kb' })); // Body limit is a good practice too
 
 // 3. Data sanitization against NoSQL query injection
+// Custom middleware to handle Express 5 read-only properties (req.query)
 app.use((req, res, next) => {
   try {
     // Sanitize req.body
@@ -72,15 +73,32 @@ app.use((req, res, next) => {
       req.body = sanitize(req.body);
     }
 
+    // Sanitize req.query (In-place modification for Express 5 compatibility)
+    if (req.query) {
+      const cleanedQuery = sanitize(req.query);
+      // For Express 5, defineProperty is needed to overwrite the getter if assignment fails
+      try {
+        req.query = cleanedQuery;
+      } catch (err) {
+        Object.defineProperty(req, 'query', {
+          value: cleanedQuery,
+          writable: true,
+          configurable: true
+        });
+      }
+    }
+
     // Sanitize req.params
     if (req.params) {
       const cleanedParams = sanitize(req.params);
-      for (const key of Object.keys(req.params)) {
-        if (cleanedParams[key] === undefined) {
-          try { delete req.params[key]; } catch (e) { }
-        } else {
-          req.params[key] = cleanedParams[key];
-        }
+      try {
+        req.params = cleanedParams;
+      } catch (err) {
+        Object.defineProperty(req, 'params', {
+          value: cleanedParams,
+          writable: true,
+          configurable: true
+        });
       }
     }
   } catch (error) {
