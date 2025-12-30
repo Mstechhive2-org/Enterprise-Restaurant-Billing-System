@@ -109,6 +109,14 @@ class SessionManager {
   getMaxConcurrentLogins() {
     return this.maxConcurrentLogins;
   }
+
+  /**
+   * Clear all sessions (for development/testing)
+   */
+  clearAllSessions() {
+    this.activeSessions.clear();
+    this.userMaxLogins.clear();
+  }
 }
 
 // Export singleton instance

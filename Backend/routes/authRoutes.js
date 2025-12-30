@@ -1,10 +1,16 @@
 import express from 'express';
 const router = express.Router();
-import { login, logout, createAdmin, setupAdmin } from '../controllers/authController.js';
+import { login, logout, refreshToken, createAdmin, setupAdmin } from '../controllers/authController.js';
+import sessionManager from '../utils/sessionManager.js';
 import { authenticateToken, requireAdmin, optionalAuthenticateToken } from '../middleware/auth.js';
 
 // Public routes
 router.post('/login', login);
+router.post('/refresh', refreshToken);
+router.post('/clear-sessions', (req, res) => {
+  sessionManager.clearAllSessions();
+  res.json({ message: 'All sessions cleared' });
+});
 
 // Protected routes
 router.post('/logout', authenticateToken, logout);

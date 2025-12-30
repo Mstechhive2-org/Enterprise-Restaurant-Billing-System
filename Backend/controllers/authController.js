@@ -18,14 +18,20 @@ export const login = async (req, res) => {
     const maxLogins = user.role === 'Admin' ? adminMaxLogins : customerMaxLogins;
     sessionManager.setUserMaxLogins(userId, maxLogins);
 
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       { id: userId, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '1d' }
+      { expiresIn: '24h' } // 24-hour access token for better UX
+    );
+
+    const refreshToken = jwt.sign(
+      { id: userId, role: user.role },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '30d' } // Long-lived refresh token
     );
 
     // Add session to session manager (will return false if limit reached)
-    const sessionAdded = sessionManager.addSession(userId, token);
+    const sessionAdded = sessionManager.addSession(userId, accessToken);
     if (!sessionAdded) {
       const activeCount = sessionManager.getActiveSessionCount(userId);
       return res.status(403).json({
@@ -34,7 +40,8 @@ export const login = async (req, res) => {
     }
 
     res.status(200).json({
-      token,
+      accessToken,
+      refreshToken,
       user: {
         id: user._id,
         username: user.username,
@@ -58,6 +65,39 @@ export const logout = async (req, res) => {
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  const { refreshToken: token } = req.body;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Refresh token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      { id: decoded.id, role: decoded.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Optionally generate new refresh token
+    const newRefreshToken = jwt.sign(
+      { id: decoded.id, role: decoded.role },
+      process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    res.status(200).json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken
+    });
+  } catch (error) {
+    res.status(403).json({ message: 'Invalid refresh token' });
   }
 };
 

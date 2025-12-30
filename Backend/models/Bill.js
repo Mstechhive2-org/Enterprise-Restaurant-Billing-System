@@ -43,11 +43,33 @@ const billSchema = new mongoose.Schema({
   },
   billType: {
     type: String,
-    enum: ['Dine-In', 'Takeaway'],
+    enum: ['Dine-In', 'Takeaway', 'Delivery'],
     default: 'Dine-In'
+  },
+  orderSource: {
+    type: String,
+    enum: ['Direct', 'Swiggy', 'Zomato', 'Other'],
+    default: 'Direct'
   },
   customerName: String,
   customerPhone: String,
+  deliveryAddress: String,
+  deliveryInstructions: String,
+  deliveryStatus: {
+    type: String,
+    enum: ['Pending', 'Preparing', 'Ready', 'Out for Delivery', 'Delivered', 'Cancelled'],
+    default: 'Pending'
+  },
+  deliveryTime: Date,
+  platformOrderId: String, // For Swiggy/Zomato order IDs
+  platformCommission: {
+    type: Number,
+    default: 0
+  },
+  packagingCharges: {
+    type: Number,
+    default: 0
+  },
   kitchenNotes: String
 }, {
   timestamps: true
@@ -59,5 +81,7 @@ billSchema.index({ tableNo: 1, status: 1 }); // For getActiveOrder
 billSchema.index({ createdAt: -1, status: 1 }); // For analytics queries
 billSchema.index({ paymentMode: 1, createdAt: -1 }); // For payment method analytics
 billSchema.index({ billType: 1, createdAt: -1 }); // For bill type filtering
+billSchema.index({ orderSource: 1, createdAt: -1 }); // For delivery platform analytics
+billSchema.index({ deliveryStatus: 1, createdAt: -1 }); // For delivery status tracking
 
 export default mongoose.model('Bill', billSchema);

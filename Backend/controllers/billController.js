@@ -18,7 +18,15 @@ export const getActiveOrder = async (req, res) => {
 // Create or Update Order (Open Status)
 export const saveOrder = async (req, res) => {
   try {
-    const { tableNo, items, customerName, customerPhone, kitchenNotes, billType } = req.body;
+    const { 
+      tableNo, 
+      items, 
+      customerName, 
+      customerPhone, 
+      kitchenNotes, 
+      billType,
+      orderSource
+    } = req.body;
 
     // Validate required fields
     if (!tableNo) {
@@ -52,13 +60,19 @@ export const saveOrder = async (req, res) => {
       order.kitchenNotes = kitchenNotes;
       order.billType = billType || order.billType;
       
+      // Update delivery fields if delivery order
+      if (billType === 'Delivery') {
+        order.orderSource = orderSource || 'Direct';
+        order.deliveryStatus = 'Pending';
+      }
+      
       order.subtotal = subtotal;
       order.total = subtotal; // Tax/Discount applied at billing
       
       await order.save();
     } else {
       // Create new order
-      order = await Bill.create({
+      const orderData = {
         tableNo,
         items: sanitizedItems,
         subtotal,
@@ -68,7 +82,15 @@ export const saveOrder = async (req, res) => {
         customerName,
         customerPhone,
         kitchenNotes
-      });
+      };
+
+      // Add delivery fields if delivery order
+      if (billType === 'Delivery') {
+        orderData.orderSource = orderSource || 'Direct';
+        orderData.deliveryStatus = 'Pending';
+      }
+
+      order = await Bill.create(orderData);
     }
     
     // Clear cache when order is updated
@@ -167,7 +189,7 @@ export const getBills = async (req, res) => {
     // Using updatedAt ensures bills that were just paid/completed show at the top
     // This ensures whatever billing was done most recently appears first
     const bills = await Bill.find(query)
-      .select('billNumber tableNo billType paymentMode total createdAt updatedAt') // Include both timestamps
+      .select('billNumber tableNo billType paymentMode total orderSource items status createdAt updatedAt') // Include status, orderSource and items for delivery filtering
       .sort({ updatedAt: -1, createdAt: -1 }) // Sort by updatedAt first (when paid), then createdAt as tiebreaker
       .skip(skip)
       .limit(limit)
@@ -236,8 +258,8 @@ export const getOpenOrders = async (req, res) => {
     const orders = await Bill.find({
       status: { $in: ['Open', 'Billed'] }
     })
-    .select('tableNo items total status billNumber billType updatedAt') // Only select needed fields
-    .sort({ updatedAt: -1 })
+    .select('tableNo items total status billNumber billType orderSource createdAt') // Include orderSource for delivery filtering
+    .sort({ createdAt: -1 })
     .limit(100) // Limit to 100 most recent active orders
     .lean(); // Use lean for faster queries
     
@@ -268,7 +290,7 @@ export const getDailyStats = async (req, res) => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     // Optimized: Single aggregation pipeline for better performance
-    const [paidStats, paymentStats, activeOrders] = await Promise.all([
+    const [paidStats, paymentStats, activeOrders, deliveryStats] = await Promise.all([
       // Get paid bills stats
       Bill.aggregate([
         {
@@ -308,6 +330,15 @@ export const getDailyStats = async (req, res) => {
       // Get active orders count (cached in memory for frequent access)
       Bill.countDocuments({
         status: { $in: ['Open', 'Billed'] }
+      }),
+      // Get delivery orders count (paid delivery orders today)
+      Bill.countDocuments({
+        createdAt: { $gte: today, $lt: tomorrow },
+        status: 'Paid',
+        $or: [
+          { billType: 'Delivery' },
+          { orderSource: { $exists: true, $ne: null } }
+        ]
       })
     ]);
 
@@ -328,7 +359,8 @@ export const getDailyStats = async (req, res) => {
       totalDiscount: result.totalDiscount,
       totalTax: result.totalTax,
       paymentMethods: paymentStats,
-      activeOrders: activeOrders
+      activeOrders: activeOrders,
+      deliveryOrders: deliveryStats || 0
     };
     
     // Cache the result for 30 seconds
