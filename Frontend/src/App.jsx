@@ -250,7 +250,7 @@ function App() {
               </div>
             </div>
           }>
-            {view === 'dashboard' && <Dashboard />}
+            {view === 'dashboard' && <Dashboard onNavigate={handleViewChange} />}
             {view === 'orders' && (
               <ActiveOrders
                 onSelectOrder={(tableNo) => {

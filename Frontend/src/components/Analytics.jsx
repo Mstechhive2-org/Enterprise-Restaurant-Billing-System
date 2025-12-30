@@ -130,159 +130,171 @@ const Analytics = () => {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="space-y-6">
+      <div className="max-w-7xl mx-auto p-6 space-y-5">
         {/* Period Selector */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-surface rounded-xl p-1 border border-border">
-              <button
-                onClick={() => {
-                  setViewMode('month');
-                  setDays(null);
-                }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  viewMode === 'month'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
-                }`}
-              >
-                Month
-              </button>
-              <button
-                onClick={() => {
-                  setViewMode('days');
-                  setDays(7);
-                }}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  viewMode === 'days'
-                    ? 'bg-primary text-white shadow-md'
-                    : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
-                }`}
-              >
-                Days
-              </button>
+        <div className="bg-gradient-to-r from-primary/5 via-accent/3 to-secondary/5 rounded-xl p-4 border border-border/50 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-surface rounded-lg p-1 border border-border/50">
+                <button
+                  onClick={() => {
+                    setViewMode('month');
+                    setDays(null);
+                  }}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'month'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
+                  }`}
+                >
+                  Month
+                </button>
+                <button
+                  onClick={() => {
+                    setViewMode('days');
+                    setDays(7);
+                  }}
+                  className={`px-4 py-2 rounded-md font-medium transition-all ${
+                    viewMode === 'days'
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
+                  }`}
+                >
+                  Days
+                </button>
+              </div>
+              
+              {viewMode === 'month' ? (
+                <div className="flex items-center gap-2 bg-surface rounded-lg px-4 py-2 border border-border/50">
+                  <Calendar size={16} className="text-primary" />
+                  <select
+                    value={`${selectedYear}-${selectedMonth}`}
+                    onChange={(e) => {
+                      const [year, month] = e.target.value.split('-').map(Number);
+                      setSelectedYear(year);
+                      setSelectedMonth(month);
+                    }}
+                    className="bg-transparent font-medium text-text-main focus:outline-none cursor-pointer"
+                  >
+                    {getAvailableMonths().map((m) => (
+                      <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-surface rounded-lg p-1 border border-border/50">
+                  {[7, 30].map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDays(d)}
+                      className={`px-4 py-2 rounded-md font-medium transition-all ${
+                        days === d
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
+                      }`}
+                    >
+                      {d} Days
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
-            {viewMode === 'month' ? (
-              <div className="flex items-center gap-2 bg-surface rounded-xl px-4 py-2 border border-border">
-                <Calendar size={16} className="text-text-muted" />
-                <select
-                  value={`${selectedYear}-${selectedMonth}`}
-                  onChange={(e) => {
-                    const [year, month] = e.target.value.split('-').map(Number);
-                    setSelectedYear(year);
-                    setSelectedMonth(month);
-                  }}
-                  className="bg-transparent font-medium text-text-main focus:outline-none cursor-pointer"
-                >
-                  {getAvailableMonths().map((m) => (
-                    <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 bg-surface rounded-xl p-1 border border-border">
-                {[7, 30].map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setDays(d)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                      days === d
-                        ? 'bg-primary text-white shadow-md'
-                        : 'text-text-muted hover:text-text-main hover:bg-surface-hover'
-                    }`}
-                  >
-                    {d} Days
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownloadReport}
-              className="flex items-center gap-2 px-4 py-2 bg-success hover:bg-success/90 rounded-xl border border-success transition-all text-white"
-            >
-              <FileSpreadsheet size={16} />
-              <span className="text-sm font-medium">Download Report</span>
-            </button>
-            <button
-              onClick={fetchAnalytics}
-              className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover rounded-xl border border-border transition-all text-text-main"
-            >
-              <RefreshCw size={16} />
-              <span className="text-sm font-medium">Refresh</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownloadReport}
+                className="flex items-center gap-2 px-4 py-2.5 bg-success hover:bg-success/90 rounded-lg border border-success transition-all text-white shadow-sm hover:shadow-md font-medium"
+              >
+                <FileSpreadsheet size={16} />
+                <span className="text-sm">Download Report</span>
+              </button>
+              <button
+                onClick={fetchAnalytics}
+                className="flex items-center gap-2 px-4 py-2.5 bg-surface hover:bg-surface-hover rounded-lg border border-border/50 transition-all text-text-main shadow-sm hover:shadow-md font-medium"
+              >
+                <RefreshCw size={16} />
+                <span className="text-sm">Refresh</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Total Bills */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="text-primary" size={18} />
-                <span className="text-xs font-bold text-text-muted">Total Bills</span>
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                <Receipt className="text-primary" size={20} />
               </div>
-              <span className="text-lg font-bold text-text-main">{summary.totalBills.toLocaleString()}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Bills</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{summary.totalBills.toLocaleString()}</p>
             </div>
           </div>
 
           {/* Total Orders */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-lg p-3 border border-secondary/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="text-secondary" size={18} />
-                <span className="text-xs font-bold text-text-muted">Total Orders</span>
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
+                <ShoppingBag className="text-secondary" size={20} />
               </div>
-              <span className="text-lg font-bold text-text-main">{summary.totalOrders.toLocaleString()}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{summary.totalOrders.toLocaleString()}</p>
             </div>
           </div>
 
           {/* Today's Revenue */}
-          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-lg p-3 border border-success/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="text-success" size={18} />
-                <span className="text-xs font-bold text-text-muted">Today's Revenue</span>
+          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-5 border border-success/20 shadow-sm hover:shadow-lg hover:border-success/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-success/20 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-success" size={20} />
               </div>
-              <span className="text-lg font-bold text-text-main">{formatCurrency(summary.today.revenue)}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Today's Revenue</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(summary.today.revenue)}</p>
             </div>
           </div>
 
           {/* Period Revenue */}
-          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg p-3 border border-accent/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <DollarSign className="text-accent" size={18} />
-                <span className="text-xs font-bold text-text-muted">
-                  {viewMode === 'month' ? `${getMonthName(selectedMonth)} ${selectedYear}` : `${days} Days`} Revenue
-                </span>
+          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-5 border border-accent/20 shadow-sm hover:shadow-lg hover:border-accent/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="text-accent" size={20} />
               </div>
-              <span className="text-lg font-bold text-text-main">{formatCurrency(summary.period.revenue)}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">
+                {viewMode === 'month' ? `${getMonthName(selectedMonth)} ${selectedYear}` : `${days} Days`} Revenue
+              </p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(summary.period.revenue)}</p>
             </div>
           </div>
 
           {/* Delivery Orders */}
-          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-lg p-3 border border-orange-200/50 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Truck className="text-orange-600" size={18} />
-                <span className="text-xs font-bold text-text-muted">Delivery Orders</span>
+          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-5 border border-orange-200/50 shadow-sm hover:shadow-lg hover:border-orange-300/50 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-orange-200/50 rounded-lg flex items-center justify-center">
+                <Truck className="text-orange-600" size={20} />
               </div>
-              <span className="text-lg font-bold text-text-main">{summary.period.deliveryOrders?.toLocaleString() || 0}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Delivery Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{summary.period.deliveryOrders?.toLocaleString() || 0}</p>
             </div>
           </div>
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Daily Revenue Chart */}
-          <div className="bg-surface rounded-2xl p-6 border border-border shadow-sm">
+          <div className="bg-surface rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -309,7 +321,7 @@ const Analytics = () => {
                       <div key={index} className="flex-1 flex flex-col items-center gap-2">
                         <div className="w-full flex flex-col items-center justify-end h-full">
                           <div
-                            className="w-full bg-gradient-to-t from-primary to-primary/60 rounded-t-lg transition-all hover:from-primary/80 hover:to-primary/40 cursor-pointer group relative"
+                            className="w-full bg-gradient-to-t from-primary via-primary/80 to-primary/60 rounded-t-lg transition-all hover:from-primary hover:to-primary/70 cursor-pointer group relative shadow-sm hover:shadow-md"
                             style={{ height: `${Math.max(height, 5)}%` }}
                             title={`${formatDate(day._id)}: ${formatCurrency(day.revenue)}`}
                           >
@@ -328,8 +340,8 @@ const Analytics = () => {
                 </div>
                 
                 {/* Daily Breakdown Table */}
-                <div className="mt-6 border border-border rounded-xl overflow-hidden">
-                  <div className="bg-primary/5 px-4 py-3 border-b border-border">
+                <div className="mt-6 border border-border/50 rounded-xl overflow-hidden shadow-sm">
+                  <div className="bg-primary/5 px-4 py-3 border-b border-border/50">
                     <h3 className="font-bold text-text-main text-sm">Daily Breakdown</h3>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
@@ -344,7 +356,7 @@ const Analytics = () => {
                       </thead>
                       <tbody>
                         {dailyRevenue.map((day, index) => (
-                          <tr key={index} className="border-b border-border hover:bg-surface-hover transition-colors">
+                          <tr key={index} className="border-b border-border/50 hover:bg-surface-hover transition-colors">
                             <td className="px-4 py-2 text-sm font-medium text-text-main">
                               {formatDate(day._id)}
                             </td>
@@ -394,7 +406,7 @@ const Analytics = () => {
           </div>
 
           {/* Payment Mode Breakdown */}
-          <div className="bg-surface rounded-2xl p-6 border border-border shadow-sm">
+          <div className="bg-surface rounded-xl p-6 border border-border shadow-sm hover:shadow-md transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center">
@@ -412,7 +424,7 @@ const Analytics = () => {
             </div>
             
             {paymentModeStats && paymentModeStats.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-2.5">
                 {paymentModeStats.map((stat, index) => {
                   const totalRevenue = paymentModeStats.reduce((sum, s) => sum + s.revenue, 0);
                   const percentage = totalRevenue > 0 ? (stat.revenue / totalRevenue) * 100 : 0;
@@ -424,32 +436,32 @@ const Analytics = () => {
                   const colorClass = colors[index % colors.length];
                   
                   return (
-                    <div key={stat._id || index} className="space-y-2">
+                    <div key={stat._id || index} className="space-y-2 p-3 bg-surface/50 rounded-lg border border-border/30 hover:border-border/50 transition-all duration-200">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 bg-gradient-to-br ${colorClass} rounded-xl flex items-center justify-center text-white`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-9 h-9 bg-gradient-to-br ${colorClass} rounded-lg flex items-center justify-center text-white shadow-sm`}>
                             {getPaymentModeIcon(stat._id)}
                           </div>
                           <div>
-                            <p className="font-bold text-text-main">{stat._id || 'Unknown'}</p>
-                            <p className="text-xs text-text-muted">{stat.count} transactions</p>
+                            <p className="font-bold text-text-main text-sm">{stat._id || 'Unknown'}</p>
+                            <p className="text-xs text-text-muted">{stat.count} txns</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-text-main">{formatCurrency(stat.revenue)}</p>
+                          <p className="font-bold text-text-main text-base">{formatCurrency(stat.revenue)}</p>
                           <p className="text-xs text-text-muted">{percentage.toFixed(1)}%</p>
                         </div>
                       </div>
-                      <div className="w-full bg-border rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-border/50 rounded-full h-2 overflow-hidden shadow-inner">
                         <div
-                          className={`h-full bg-gradient-to-r ${colorClass} transition-all`}
+                          className={`h-full bg-gradient-to-r ${colorClass} transition-all duration-500 shadow-sm`}
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
                     </div>
                   );
                 })}
-                <div className="pt-4 border-t border-border mt-4">
+                <div className="pt-4 border-t border-border/50 mt-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-bold text-text-muted">Total</p>
                     <p className="text-lg font-bold text-text-main">
@@ -458,6 +470,67 @@ const Analytics = () => {
                       )}
                     </p>
                   </div>
+                  
+                  {/* Payment Insights */}
+                  {paymentModeStats.length > 0 && (() => {
+                    const totalRevenue = paymentModeStats.reduce((sum, s) => sum + s.revenue, 0);
+                    const totalTransactions = paymentModeStats.reduce((sum, s) => sum + s.count, 0);
+                    const mostPopularByCount = paymentModeStats.reduce((max, stat) => 
+                      stat.count > max.count ? stat : max, paymentModeStats[0]
+                    );
+                    const mostRevenue = paymentModeStats.reduce((max, stat) => 
+                      stat.revenue > max.revenue ? stat : max, paymentModeStats[0]
+                    );
+                    const avgTransactionValue = totalRevenue / totalTransactions;
+                    const leastUsed = paymentModeStats.reduce((min, stat) => 
+                      stat.count < min.count ? stat : min, paymentModeStats[0]
+                    );
+                    const revenueShare = paymentModeStats.map(stat => ({
+                      method: stat._id,
+                      share: ((stat.revenue / totalRevenue) * 100).toFixed(1)
+                    }));
+                    
+                    return (
+                      <div className="pt-3 border-t border-border/30 space-y-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-primary/5 rounded-lg p-2.5 border border-primary/10">
+                            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">Most Popular</p>
+                            <p className="text-xs font-bold text-text-main">{mostPopularByCount._id}</p>
+                            <p className="text-[10px] text-text-muted mt-0.5">{mostPopularByCount.count} txns</p>
+                          </div>
+                          <div className="bg-success/5 rounded-lg p-2.5 border border-success/10">
+                            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">Top Revenue</p>
+                            <p className="text-xs font-bold text-text-main">{mostRevenue._id}</p>
+                            <p className="text-[10px] text-text-muted mt-0.5">{formatCurrency(mostRevenue.revenue)}</p>
+                          </div>
+                          <div className="bg-accent/5 rounded-lg p-2.5 border border-accent/10">
+                            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">Avg Transaction</p>
+                            <p className="text-xs font-bold text-text-main">{formatCurrency(avgTransactionValue)}</p>
+                          </div>
+                          <div className="bg-secondary/5 rounded-lg p-2.5 border border-secondary/10">
+                            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">Total Transactions</p>
+                            <p className="text-xs font-bold text-text-main">{totalTransactions}</p>
+                          </div>
+                        </div>
+                        <div className="bg-surface/50 rounded-lg p-2.5 border border-border/30">
+                          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-2">Revenue Share</p>
+                          <div className="space-y-1.5">
+                            {revenueShare.map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between">
+                                <span className="text-xs text-text-muted">{item.method}</span>
+                                <span className="text-xs font-bold text-text-main">{item.share}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="bg-orange-50/50 dark:bg-orange-950/10 rounded-lg p-2.5 border border-orange-200/30">
+                          <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">Least Used</p>
+                          <p className="text-xs font-bold text-text-main">{leastUsed._id}</p>
+                          <p className="text-[10px] text-text-muted mt-0.5">Consider promoting this method</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ) : (
@@ -469,74 +542,80 @@ const Analytics = () => {
         </div>
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="text-primary" size={18} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-surface/80 backdrop-blur-sm rounded-xl p-5 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Calendar className="text-primary" size={20} />
+              </div>
               <h3 className="font-bold text-text-main text-sm">Period Summary</h3>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Bills</span>
-                <span className="font-bold text-text-main text-sm">{summary.period.bills}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Bills</span>
+                <span className="font-bold text-text-main text-base">{summary.period.bills}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Orders</span>
-                <span className="font-bold text-text-main text-sm">{summary.period.orders}</span>
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Orders</span>
+                <span className="font-bold text-text-main text-base">{summary.period.orders}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Avg Bill</span>
-                <span className="font-bold text-text-main text-sm">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Avg Bill</span>
+                <span className="font-bold text-text-main text-base">
                   {formatCurrency(summary.period.averageBill)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="text-success" size={18} />
+          <div className="bg-surface/80 backdrop-blur-sm rounded-xl p-5 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-success" size={20} />
+              </div>
               <h3 className="font-bold text-text-main text-sm">Discounts & Tax</h3>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Total Discount</span>
-                <span className="font-bold text-text-main text-sm">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Discount</span>
+                <span className="font-bold text-text-main text-base">
                   {formatCurrency(summary.period.discount)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Total Tax</span>
-                <span className="font-bold text-text-main text-sm">
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Total Tax</span>
+                <span className="font-bold text-text-main text-base">
                   {formatCurrency(summary.period.tax)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Net Revenue</span>
-                <span className="font-bold text-success text-sm">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Net Revenue</span>
+                <span className="font-bold text-success text-base">
                   {formatCurrency(summary.period.revenue)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Receipt className="text-accent" size={18} />
+          <div className="bg-surface/80 backdrop-blur-sm rounded-xl p-5 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Receipt className="text-accent" size={20} />
+              </div>
               <h3 className="font-bold text-text-main text-sm">Today's Performance</h3>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Bills</span>
-                <span className="font-bold text-text-main text-sm">{summary.today.bills}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Bills</span>
+                <span className="font-bold text-text-main text-base">{summary.today.bills}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Orders</span>
-                <span className="font-bold text-text-main text-sm">{summary.today.orders}</span>
+              <div className="flex justify-between items-center py-2 border-b border-border/50">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Orders</span>
+                <span className="font-bold text-text-main text-base">{summary.today.orders}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-xs text-text-muted">Avg Bill</span>
-                <span className="font-bold text-text-main text-sm">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Avg Bill</span>
+                <span className="font-bold text-text-main text-base">
                   {formatCurrency(summary.today.averageBill)}
                 </span>
               </div>

@@ -47,12 +47,9 @@ const DeliveryOrders = () => {
       const paidBills = await getBills(currentPage, itemsPerPage, searchTerm);
       
       // Filter for delivery orders
-      // A delivery order is identified by:
-      // 1. billType === 'Delivery', OR
-      // 2. orderSource exists (including 'Direct')
+      // Only show orders with billType === 'Delivery'
       const paidDeliveryOrders = (paidBills.bills || []).filter(bill => {
-        const isDelivery = bill.billType === 'Delivery' || bill.orderSource;
-        return isDelivery;
+        return bill.billType === 'Delivery';
       });
       
       // Sort by date (newest first) - backend already sorts, but ensure it
@@ -69,8 +66,7 @@ const DeliveryOrders = () => {
       if (currentPage === 1) {
         const allBills = await getBills(1, 1000, searchTerm);
         const allDeliveryCount = (allBills.bills || []).filter(bill => {
-          const isDelivery = bill.billType === 'Delivery' || bill.orderSource;
-          return isDelivery;
+          return bill.billType === 'Delivery';
         }).length;
         
         setPagination({

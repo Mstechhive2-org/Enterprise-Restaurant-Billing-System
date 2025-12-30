@@ -17,10 +17,11 @@ import {
   Truck
 } from 'lucide-react';
 import Toast from './Toast';
+import { LayoutDashboard } from 'lucide-react';
 
-const Dashboard = () => {
-  const [stats, setStats] = useState({ 
-    sales: 0, 
+const Dashboard = ({ onNavigate }) => {
+  const [stats, setStats] = useState({
+    sales: 0,
     orders: 0,
     averageOrderValue: 0,
     totalItems: 0,
@@ -28,7 +29,9 @@ const Dashboard = () => {
     totalTax: 0,
     paymentMethods: [],
     activeOrders: 0,
-    deliveryOrders: 0
+    deliveryOrders: 0,
+    dineInOrders: 0,
+    takeawayOrders: 0
   });
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -51,8 +54,8 @@ const Dashboard = () => {
         setStats(data);
       } else {
         // Day changed, reset to zero
-        setStats({ 
-          sales: 0, 
+        setStats({
+          sales: 0,
           orders: 0,
           averageOrderValue: 0,
           totalItems: 0,
@@ -60,7 +63,9 @@ const Dashboard = () => {
           totalTax: 0,
           paymentMethods: [],
           activeOrders: 0,
-          deliveryOrders: 0
+          deliveryOrders: 0,
+          dineInOrders: 0,
+          takeawayOrders: 0
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -81,8 +86,8 @@ const Dashboard = () => {
       
       if (storedDate !== today) {
         // Day has changed, reset stats and fetch new data
-        setStats({ 
-          sales: 0, 
+        setStats({
+          sales: 0,
           orders: 0,
           averageOrderValue: 0,
           totalItems: 0,
@@ -90,7 +95,9 @@ const Dashboard = () => {
           totalTax: 0,
           paymentMethods: [],
           activeOrders: 0,
-          deliveryOrders: 0
+          deliveryOrders: 0,
+          dineInOrders: 0,
+          takeawayOrders: 0
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -184,75 +191,107 @@ const Dashboard = () => {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto p-6 space-y-5">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 rounded-2xl p-6 border border-border">
+        <div className="bg-gradient-to-r from-primary/5 via-accent/3 to-secondary/5 rounded-xl p-4 border border-border/50 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-text-main mb-1">Today's Dashboard</h1>
-              <p className="text-sm text-text-muted">{formatDate(currentDate)}</p>
+              <h1 className="text-xl font-bold text-text-main mb-0.5">Today's Dashboard</h1>
+              <p className="text-xs text-text-muted font-medium">{formatDate(currentDate)}</p>
             </div>
-            <div className="flex items-center gap-3 text-text-muted">
-              <Clock size={18} />
-              <span className="text-lg font-mono font-bold text-text-main">{formatTime(currentDate)}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => onNavigate && onNavigate('billing')}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+              >
+                <LayoutDashboard size={16} />
+                <span className="text-sm">Quick Billing</span>
+              </button>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-border/50">
+                <Clock size={16} className="text-primary" />
+                <span className="text-base font-mono font-bold text-text-main">{formatTime(currentDate)}</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-6 gap-4">
           {/* Revenue Card */}
-          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-4 border border-success/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-5 border border-success/20 shadow-sm hover:shadow-lg hover:border-success/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-success/20 rounded-lg flex items-center justify-center">
                 <DollarSign className="text-success" size={20} />
-                <span className="text-sm font-bold text-text-muted">Today's Revenue</span>
               </div>
-              <span className="text-xl font-bold text-text-main">{formatCurrency(stats.sales)}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Today's Revenue</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.sales)}</p>
             </div>
           </div>
 
-          {/* Orders Card */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          {/* Dine-In Orders Card */}
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
                 <ShoppingBag className="text-primary" size={20} />
-                <span className="text-sm font-bold text-text-muted">Completed Orders</span>
               </div>
-              <span className="text-xl font-bold text-text-main">{stats.orders}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Dine-In Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{stats.dineInOrders}</p>
+            </div>
+          </div>
+
+          {/* Takeaway Orders Card */}
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
+                <Package className="text-secondary" size={20} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Takeaway Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{stats.takeawayOrders}</p>
             </div>
           </div>
 
           {/* Average Order Value */}
-          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-4 border border-accent/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-5 border border-accent/20 shadow-sm hover:shadow-lg hover:border-accent/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
                 <TrendingUp className="text-accent" size={20} />
-                <span className="text-sm font-bold text-text-muted">Avg Order Value</span>
               </div>
-              <span className="text-xl font-bold text-text-main">{formatCurrency(stats.averageOrderValue)}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Avg Order Value</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.averageOrderValue)}</p>
             </div>
           </div>
 
           {/* Active Orders */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-4 border border-secondary/20 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
                 <Activity className="text-secondary" size={20} />
-                <span className="text-sm font-bold text-text-muted">Active Orders</span>
               </div>
-              <span className="text-xl font-bold text-text-main">{stats.activeOrders}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Active Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{stats.activeOrders}</p>
             </div>
           </div>
 
           {/* Delivery Orders */}
-          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-4 border border-orange-200/50 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-5 border border-orange-200/50 shadow-sm hover:shadow-lg hover:border-orange-300/50 transition-all duration-300">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-10 h-10 bg-orange-200/50 rounded-lg flex items-center justify-center">
                 <Truck className="text-orange-600" size={20} />
-                <span className="text-sm font-bold text-text-muted">Delivery Orders</span>
               </div>
-              <span className="text-xl font-bold text-text-main">{stats.deliveryOrders || 0}</span>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Delivery Orders</p>
+              <p className="text-2xl font-bold text-text-main leading-tight">{stats.deliveryOrders || 0}</p>
             </div>
           </div>
         </div>
@@ -260,33 +299,39 @@ const Dashboard = () => {
         {/* Secondary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Items Sold */}
-          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+          <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Package className="text-primary" size={18} />
-                <span className="text-xs font-bold text-text-muted">Items Sold</span>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Package className="text-primary" size={18} />
+                </div>
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Items Sold</span>
               </div>
               <span className="text-lg font-bold text-text-main">{stats.totalItems}</span>
             </div>
           </div>
 
           {/* Discount Given */}
-          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+          <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Percent className="text-success" size={18} />
-                <span className="text-xs font-bold text-text-muted">Discount Given</span>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-success/10 rounded-lg flex items-center justify-center">
+                  <Percent className="text-success" size={18} />
+                </div>
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Discount Given</span>
               </div>
               <span className="text-lg font-bold text-text-main">{formatCurrency(stats.totalDiscount)}</span>
             </div>
           </div>
 
           {/* Tax Collected */}
-          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+          <div className="bg-surface/80 backdrop-blur-sm rounded-lg p-4 border border-border/50 shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="text-accent" size={18} />
-                <span className="text-xs font-bold text-text-muted">Tax Collected</span>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <Receipt className="text-accent" size={18} />
+                </div>
+                <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Tax Collected</span>
               </div>
               <span className="text-lg font-bold text-text-main">{formatCurrency(stats.totalTax)}</span>
             </div>

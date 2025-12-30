@@ -36,14 +36,37 @@ const BillHistory = () => {
     setLoading(true);
     try {
       const data = await getBills(currentPage, itemsPerPage, debouncedSearchTerm);
-      
+
       // Handle both old format (array) and new format (object with pagination)
+      let billsData = [];
       if (Array.isArray(data)) {
-        setBills(data);
-        setPagination({ totalBills: data.length, totalPages: 1, currentPage: 1 });
+        billsData = data;
       } else {
-        setBills(data.bills || []);
-        setPagination(data.pagination || { totalBills: 0, totalPages: 1, currentPage: 1 });
+        billsData = data.bills || [];
+      }
+
+      // Filter out delivery orders - only show dine-in and takeaway
+      // Only filter by billType, not orderSource
+      const filteredBills = billsData.filter(bill => {
+        return bill.billType !== 'Delivery';
+      });
+
+      setBills(filteredBills);
+
+      // Adjust pagination for filtered results
+      if (Array.isArray(data)) {
+        setPagination({ totalBills: filteredBills.length, totalPages: 1, currentPage: 1 });
+      } else {
+        // For server-side pagination, we need to estimate the filtered count
+        // This is approximate since we don't know the exact count without additional query
+        const originalPagination = data.pagination || { totalBills: 0, totalPages: 1, currentPage: 1 };
+        // Assume roughly 30% are delivery orders for estimation
+        const estimatedFilteredTotal = Math.floor(originalPagination.totalBills * 0.7);
+        setPagination({
+          ...originalPagination,
+          totalBills: estimatedFilteredTotal,
+          totalPages: Math.max(1, Math.ceil(estimatedFilteredTotal / itemsPerPage))
+        });
       }
     } catch (error) {
       console.error('Error fetching bills:', error);
