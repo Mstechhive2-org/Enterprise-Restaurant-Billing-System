@@ -11,10 +11,6 @@ export const login = async (req, res) => {
 
     const userId = user._id.toString();
 
-    // Determine max concurrent logins
-    const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '1', 10);
-    const customerMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '5', 10);
-    const maxLogins = user.role === 'Admin' ? adminMaxLogins : customerMaxLogins;
 
     // Check current active sessions
     // Filter out expired sessions first (optional cleanup)
@@ -23,9 +19,39 @@ export const login = async (req, res) => {
     //   return true; 
     // });
 
+    // Clean up expired sessions first
+    const now = new Date();
+    user.activeSessions = user.activeSessions.filter(session => {
+      try {
+        // Check if access token is expired
+        const decoded = jwt.decode(session.accessToken);
+        if (!decoded || decoded.exp * 1000 < now.getTime()) {
+          return false; // Remove expired session
+        }
+        return true;
+      } catch (err) {
+        return false; // Remove invalid sessions
+      }
+    });
+
+    // Determine max concurrent logins from environment variables
+    // Default: Admin = 7 (multiple logins allowed), Cashier = 1 (single login only)
+    // Cashier users can only login from one device at a time
+    // Admin users can have multiple concurrent logins (configurable via .env)
+    const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '7', 10);
+    const cashierMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '1', 10);
+    const maxLogins = user.role === 'Admin' ? adminMaxLogins : cashierMaxLogins;
+
+    // Check if user has reached maximum concurrent login limit
+    // This check is per-user, so different users can login simultaneously
+    // User1 can login on device A, User2 can login on device B, etc.
+    // But each user is limited to their max concurrent sessions
     if (user.activeSessions.length >= maxLogins) {
       return res.status(403).json({
-        message: `Limited access for login: Maximum of ${maxLogins} device(s) allowed. Please logout from other devices.`
+        message: `Limited access for login: Maximum of ${maxLogins} device(s) allowed for ${user.role} users. Please logout from other devices to continue.`,
+        maxLogins: maxLogins,
+        currentSessions: user.activeSessions.length,
+        role: user.role
       });
     }
 
@@ -60,25 +86,31 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
   }
 };
 
 export const logout = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.id || req.user._id;
     const token = req.headers['authorization']?.split(' ')[1];
 
-    if (token) {
+    if (token && userId) {
       // Remove session from database
-      await User.findByIdAndUpdate(userId, {
-        $pull: { activeSessions: { accessToken: token } }
-      });
+      const user = await User.findById(userId);
+      if (user) {
+        user.activeSessions = user.activeSessions.filter(
+          session => session.accessToken !== token
+        );
+        await user.save();
+      }
     }
 
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('Logout error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
   }
 };
 
@@ -90,7 +122,15 @@ export const refreshToken = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(403).json({ message: 'Refresh token expired. Please login again.' });
+      }
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
 
     // Check if user exists and has this refresh token in active sessions
     const user = await User.findById(decoded.id);
@@ -133,11 +173,8 @@ export const refreshToken = async (req, res) => {
       refreshToken: newRefreshToken
     });
   } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      // Optionally remove the expired session from DB here if we had the user ID
-      return res.status(403).json({ message: 'Refresh token expired' });
-    }
-    res.status(403).json({ message: 'Invalid refresh token' });
+    console.error('Refresh token error:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 

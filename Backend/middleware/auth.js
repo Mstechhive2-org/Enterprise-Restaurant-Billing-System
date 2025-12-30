@@ -1,43 +1,55 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+const authenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ message: 'Access token required' });
-  }
+    if (!token) {
+      return res.status(401).json({ message: 'Access token required' });
+    }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
+    // Verify JWT token
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      if (err.name === 'TokenExpiredError') {
+        return res.status(403).json({ message: 'Token expired. Please login again.' });
+      }
+      return res.status(403).json({ message: 'Invalid token' });
     }
 
     // Verify session still exists in DB (concurrent login check)
-    // We need to fetch the user to check activeSessions
-    import('../models/User.js').then(module => {
-      const User = module.default;
-      User.findById(decoded.id).then(user => {
-        if (!user) {
-          return res.status(401).json({ message: 'User not found' });
-        }
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
 
-        const isSessionValid = user.activeSessions.some(session => session.accessToken === token);
+    // Check if this token is in active sessions
+    const isSessionValid = user.activeSessions.some(session => session.accessToken === token);
 
-        if (!isSessionValid) {
-          return res.status(401).json({ message: 'Session expired or invalid (logged out from another device)' });
-        }
-
-        req.user = user;
-        next();
-      }).catch(dbErr => {
-        return res.status(500).json({ message: 'Database error during authentication' });
+    if (!isSessionValid) {
+      return res.status(401).json({ 
+        message: 'Session expired or invalid (logged out from another device or session expired)' 
       });
-    }).catch(importErr => {
-      console.error("Failed to import User model", importErr);
-      return res.status(500).json({ message: 'Internal server error' });
-    });
-  });
+    }
+
+    // Update last active time for this session
+    const sessionIndex = user.activeSessions.findIndex(s => s.accessToken === token);
+    if (sessionIndex !== -1) {
+      user.activeSessions[sessionIndex].lastActive = new Date();
+      // Save without awaiting to avoid blocking the request
+      user.save().catch(err => console.error('Error updating session lastActive:', err));
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.status(500).json({ message: 'Internal server error during authentication' });
+  }
 };
 
 const requireAdmin = (req, res, next) => {
