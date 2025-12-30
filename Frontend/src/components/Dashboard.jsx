@@ -13,7 +13,8 @@ import {
   Activity,
   Package,
   Percent,
-  TrendingDown
+  TrendingDown,
+  Truck
 } from 'lucide-react';
 import Toast from './Toast';
 
@@ -26,7 +27,8 @@ const Dashboard = () => {
     totalDiscount: 0,
     totalTax: 0,
     paymentMethods: [],
-    activeOrders: 0
+    activeOrders: 0,
+    deliveryOrders: 0
   });
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -57,7 +59,8 @@ const Dashboard = () => {
           totalDiscount: 0,
           totalTax: 0,
           paymentMethods: [],
-          activeOrders: 0
+          activeOrders: 0,
+          deliveryOrders: 0
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -86,7 +89,8 @@ const Dashboard = () => {
           totalDiscount: 0,
           totalTax: 0,
           paymentMethods: [],
-          activeOrders: 0
+          activeOrders: 0,
+          deliveryOrders: 0
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -196,110 +200,95 @@ const Dashboard = () => {
         </div>
 
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Revenue Card */}
-          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-5 border border-success/20 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-success/20 rounded-xl flex items-center justify-center">
-                <DollarSign className="text-success" size={24} />
+          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-4 border border-success/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="text-success" size={20} />
+                <span className="text-sm font-bold text-text-muted">Today's Revenue</span>
               </div>
+              <span className="text-xl font-bold text-text-main">{formatCurrency(stats.sales)}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Today's Revenue
-            </h3>
-            <p className="text-3xl font-bold text-text-main mb-1">
-              {formatCurrency(stats.sales)}
-            </p>
-            <p className="text-xs text-text-muted">Real-time updates</p>
           </div>
 
           {/* Orders Card */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-                <ShoppingBag className="text-primary" size={24} />
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="text-primary" size={20} />
+                <span className="text-sm font-bold text-text-muted">Completed Orders</span>
               </div>
+              <span className="text-xl font-bold text-text-main">{stats.orders}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Completed Orders
-            </h3>
-            <p className="text-3xl font-bold text-text-main mb-1">
-              {stats.orders}
-            </p>
-            <p className="text-xs text-text-muted">Paid bills today</p>
           </div>
 
           {/* Average Order Value */}
-          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-5 border border-accent/20 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-accent/20 rounded-xl flex items-center justify-center">
-                <TrendingUp className="text-accent" size={24} />
+          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-4 border border-accent/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="text-accent" size={20} />
+                <span className="text-sm font-bold text-text-muted">Avg Order Value</span>
               </div>
+              <span className="text-xl font-bold text-text-main">{formatCurrency(stats.averageOrderValue)}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Avg Order Value
-            </h3>
-            <p className="text-3xl font-bold text-text-main mb-1">
-              {formatCurrency(stats.averageOrderValue)}
-            </p>
-            <p className="text-xs text-text-muted">Per transaction</p>
           </div>
 
           {/* Active Orders */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-md transition-all hover:scale-[1.02]">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center">
-                <Activity className="text-secondary" size={24} />
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-4 border border-secondary/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="text-secondary" size={20} />
+                <span className="text-sm font-bold text-text-muted">Active Orders</span>
               </div>
+              <span className="text-xl font-bold text-text-main">{stats.activeOrders}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Active Orders
-            </h3>
-            <p className="text-3xl font-bold text-text-main mb-1">
-              {stats.activeOrders}
-            </p>
-            <p className="text-xs text-text-muted">Pending bills</p>
+          </div>
+
+          {/* Delivery Orders */}
+          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-4 border border-orange-200/50 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="text-orange-600" size={20} />
+                <span className="text-sm font-bold text-text-muted">Delivery Orders</span>
+              </div>
+              <span className="text-xl font-bold text-text-main">{stats.deliveryOrders || 0}</span>
+            </div>
           </div>
         </div>
 
         {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Items Sold */}
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Package className="text-primary" size={20} />
+          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Package className="text-primary" size={18} />
+                <span className="text-xs font-bold text-text-muted">Items Sold</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Items Sold</p>
-                <p className="text-2xl font-bold text-text-main">{stats.totalItems}</p>
-              </div>
+              <span className="text-lg font-bold text-text-main">{stats.totalItems}</span>
             </div>
           </div>
 
           {/* Discount Given */}
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
-                <Percent className="text-success" size={20} />
+          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Percent className="text-success" size={18} />
+                <span className="text-xs font-bold text-text-muted">Discount Given</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Discount Given</p>
-                <p className="text-2xl font-bold text-text-main">{formatCurrency(stats.totalDiscount)}</p>
-              </div>
+              <span className="text-lg font-bold text-text-main">{formatCurrency(stats.totalDiscount)}</span>
             </div>
           </div>
 
           {/* Tax Collected */}
-          <div className="bg-surface rounded-xl p-4 border border-border shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                <Receipt className="text-accent" size={20} />
+          <div className="bg-surface rounded-lg p-3 border border-border shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="text-accent" size={18} />
+                <span className="text-xs font-bold text-text-muted">Tax Collected</span>
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-text-muted uppercase tracking-wider font-bold">Tax Collected</p>
-                <p className="text-2xl font-bold text-text-main">{formatCurrency(stats.totalTax)}</p>
-              </div>
+              <span className="text-lg font-bold text-text-main">{formatCurrency(stats.totalTax)}</span>
             </div>
           </div>
         </div>

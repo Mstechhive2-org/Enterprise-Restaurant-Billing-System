@@ -6,7 +6,9 @@ import MenuManagement from './components/MenuManagement';
 import ActiveOrders from './components/ActiveOrders';
 import Analytics from './components/Analytics';
 import Dashboard from './components/Dashboard';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home } from 'lucide-react';
+import Settings from './components/Settings';
+import DeliveryOrders from './components/DeliveryOrders';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
@@ -18,6 +20,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [sectionLoading, setSectionLoading] = useState(false);
+  const [restaurantName, setRestaurantName] = useState('RestoPOS');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -25,6 +28,34 @@ function App() {
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    // Load restaurant settings
+    const loadSettings = () => {
+      const savedSettings = localStorage.getItem('restaurantSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setRestaurantName(settings.restaurantName);
+        document.title = `${settings.restaurantName} - Restaurant Management`;
+      } else {
+        setRestaurantName('RestoPOS');
+        document.title = 'RestoPOS - Restaurant Management';
+      }
+    };
+
+    loadSettings();
+
+    // Listen for settings updates
+    const handleSettingsUpdate = (event) => {
+      loadSettings();
+    };
+
+    window.addEventListener('settingsUpdated', handleSettingsUpdate);
+
+    return () => {
+      window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -44,7 +75,8 @@ function App() {
 
   const handleLoginSuccess = (data) => {
     setUser(data.user);
-    localStorage.setItem('token', data.token);
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.user));
   };
 
@@ -58,7 +90,8 @@ function App() {
     } finally {
       // Clear local state regardless of API call result
       setUser(null);
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
     }
   };
@@ -85,6 +118,8 @@ function App() {
       case 'history': return 'Transaction History';
       case 'menu': return 'Menu Management';
       case 'analytics': return 'Analytics';
+      case 'delivery': return 'Delivery Orders';
+      case 'settings': return 'Settings';
       default: return 'RestoPOS';
     }
   };
@@ -98,7 +133,7 @@ function App() {
             <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <UtensilsCrossed size={22} />
             </div>
-            <span className="tracking-tight">RestoPOS</span>
+            <span className="tracking-tight">{restaurantName}</span>
           </div>
         </div>
 
@@ -110,7 +145,7 @@ function App() {
             <Home size={20} />
             <span>Dashboard</span>
           </button>
-          <button 
+          <button
             onClick={() => handleViewChange('orders')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium relative ${view === 'orders' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
@@ -121,6 +156,13 @@ function App() {
                 {activeOrdersCount}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => handleViewChange('delivery')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'delivery' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <Truck size={20} />
+            <span>Delivery Orders</span>
           </button>
           <button 
             onClick={() => handleViewChange('billing')}
@@ -150,6 +192,13 @@ function App() {
           >
             <UtensilsCrossed size={20} />
             <span>Menu</span>
+          </button>
+          <button
+            onClick={() => handleViewChange('settings')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <SettingsIcon size={20} />
+            <span>Settings</span>
           </button>
         </nav>
 
@@ -214,6 +263,8 @@ function App() {
               {view === 'history' && <BillHistory />}
               {view === 'analytics' && <Analytics />}
               {view === 'menu' && <MenuManagement user={user} />}
+              {view === 'delivery' && <DeliveryOrders />}
+              {view === 'settings' && <Settings />}
             </>
           )}
         </main>

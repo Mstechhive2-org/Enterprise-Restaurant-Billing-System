@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { getAnalytics } from '../api/analytics';
-import { 
-  TrendingUp, 
-  Receipt, 
-  ShoppingBag, 
-  DollarSign, 
+import { getAnalytics, downloadDailyReportCSV, downloadMonthlyReportExcel } from '../api/analytics';
+import {
+  TrendingUp,
+  Receipt,
+  ShoppingBag,
+  DollarSign,
   Calendar,
   BarChart3,
   CreditCard,
   Wallet,
   Smartphone,
-  RefreshCw
+  RefreshCw,
+  Download,
+  FileSpreadsheet,
+  Truck
 } from 'lucide-react';
 import Toast from './Toast';
 
@@ -84,6 +87,22 @@ const Analytics = () => {
       case 'UPI': return <Smartphone size={20} />;
       case 'Card': return <CreditCard size={20} />;
       default: return <CreditCard size={20} />;
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    try {
+      setToast({ message: 'Generating report...', type: 'info' });
+      if (viewMode === 'month') {
+        await downloadMonthlyReportExcel(selectedMonth, selectedYear);
+      } else {
+        // For days view, use the monthly Excel endpoint with current month
+        await downloadMonthlyReportExcel(new Date().getMonth() + 1, new Date().getFullYear());
+      }
+      setToast({ message: 'Report downloaded successfully!', type: 'success' });
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      setToast({ message: 'Failed to download report', type: 'error' });
     }
   };
 
@@ -182,83 +201,81 @@ const Analytics = () => {
             )}
           </div>
           
-          <button
-            onClick={fetchAnalytics}
-            className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover rounded-xl border border-border transition-all text-text-main"
-          >
-            <RefreshCw size={16} />
-            <span className="text-sm font-medium">Refresh</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadReport}
+              className="flex items-center gap-2 px-4 py-2 bg-success hover:bg-success/90 rounded-xl border border-success transition-all text-white"
+            >
+              <FileSpreadsheet size={16} />
+              <span className="text-sm font-medium">Download Report</span>
+            </button>
+            <button
+              onClick={fetchAnalytics}
+              className="flex items-center gap-2 px-4 py-2 bg-surface hover:bg-surface-hover rounded-xl border border-border transition-all text-text-main"
+            >
+              <RefreshCw size={16} />
+              <span className="text-sm font-medium">Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
           {/* Total Bills */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-4 border border-primary/20 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                <Receipt className="text-primary" size={20} />
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg p-3 border border-primary/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="text-primary" size={18} />
+                <span className="text-xs font-bold text-text-muted">Total Bills</span>
               </div>
+              <span className="text-lg font-bold text-text-main">{summary.totalBills.toLocaleString()}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Total Bills
-            </h3>
-            <p className="text-2xl font-bold text-text-main">
-              {summary.totalBills.toLocaleString()}
-            </p>
-            <p className="text-xs text-text-muted mt-1">All time paid bills</p>
           </div>
 
           {/* Total Orders */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-4 border border-secondary/20 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="text-secondary" size={20} />
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-lg p-3 border border-secondary/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="text-secondary" size={18} />
+                <span className="text-xs font-bold text-text-muted">Total Orders</span>
               </div>
+              <span className="text-lg font-bold text-text-main">{summary.totalOrders.toLocaleString()}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Total Orders
-            </h3>
-            <p className="text-2xl font-bold text-text-main">
-              {summary.totalOrders.toLocaleString()}
-            </p>
-            <p className="text-xs text-text-muted mt-1">All time orders</p>
           </div>
 
           {/* Today's Revenue */}
-          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-4 border border-success/20 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-success/20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-success" size={20} />
+          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-lg p-3 border border-success/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="text-success" size={18} />
+                <span className="text-xs font-bold text-text-muted">Today's Revenue</span>
               </div>
+              <span className="text-lg font-bold text-text-main">{formatCurrency(summary.today.revenue)}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              Today's Revenue
-            </h3>
-            <p className="text-2xl font-bold text-text-main">
-              {formatCurrency(summary.today.revenue)}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              {summary.today.bills} bills • {summary.today.orders} orders
-            </p>
           </div>
 
           {/* Period Revenue */}
-          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-4 border border-accent/20 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="text-accent" size={20} />
+          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-lg p-3 border border-accent/20 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="text-accent" size={18} />
+                <span className="text-xs font-bold text-text-muted">
+                  {viewMode === 'month' ? `${getMonthName(selectedMonth)} ${selectedYear}` : `${days} Days`} Revenue
+                </span>
               </div>
+              <span className="text-lg font-bold text-text-main">{formatCurrency(summary.period.revenue)}</span>
             </div>
-            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider mb-1">
-              {viewMode === 'month' ? `${getMonthName(selectedMonth)} ${selectedYear}` : `${days} Days`} Revenue
-            </h3>
-            <p className="text-2xl font-bold text-text-main">
-              {formatCurrency(summary.period.revenue)}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              Avg: {formatCurrency(summary.period.averageBill)}/bill
-            </p>
+          </div>
+
+          {/* Delivery Orders */}
+          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-lg p-3 border border-orange-200/50 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Truck className="text-orange-600" size={18} />
+                <span className="text-xs font-bold text-text-muted">Delivery Orders</span>
+              </div>
+              <span className="text-lg font-bold text-text-main">{summary.period.deliveryOrders?.toLocaleString() || 0}</span>
+            </div>
           </div>
         </div>
 

@@ -1,7 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Printer, ArrowLeft, Download, Save } from 'lucide-react';
 
 const Invoice = ({ bill, onClose, onSave }) => {
+  const [settings, setSettings] = useState({
+    restaurantName: 'RestoPOS',
+    restaurantType: 'Restaurant',
+    address: '123 Foodie Street, Gourmet City',
+    phone: '+91 98765 43210',
+    email: 'feedback@restopos.com',
+    gstin: '29ABCDE1234F1Z5',
+    footerMessage: '*** Thank You! Visit Again ***'
+  });
+
+  useEffect(() => {
+    // Load settings from localStorage
+    const savedSettings = localStorage.getItem('restaurantSettings');
+    if (savedSettings) {
+      setSettings(JSON.parse(savedSettings));
+    }
+  }, []);
   const handlePrint = () => {
     window.print();
   };
@@ -41,11 +58,19 @@ const Invoice = ({ bill, onClose, onSave }) => {
         <div className="p-8 print:p-4">
           {/* Header */}
           <div className="text-center mb-6 print:mb-4">
-            <h1 className="text-2xl print:text-xl font-bold uppercase tracking-wider mb-1">RestoPOS</h1>
-            <p className="text-xs uppercase">123 Foodie Street, Gourmet City</p>
-            <p className="text-xs uppercase">Ph: +91 98765 43210</p>
-            <p className="text-xs uppercase mt-1">GSTIN: 29ABCDE1234F1Z5</p>
-            <h2 className="text-xl print:text-lg font-bold uppercase tracking-[0.2em] mt-4 print:mt-2 border-y-2 border-dashed border-black py-2 print:py-1">Receipt</h2>
+            <h1 className="text-2xl print:text-xl font-bold uppercase tracking-wider mb-1">{settings.restaurantName}</h1>
+            <div className="text-xs uppercase">
+              {settings.address.split('\n').map((line, i) => (
+                <div key={i}>{line}</div>
+              ))}
+            </div>
+            <p className="text-xs uppercase">Ph: {settings.phone}</p>
+            <p className="text-xs uppercase mt-1">GSTIN: {settings.gstin}</p>
+            <h2 className="text-xl print:text-lg font-bold uppercase tracking-[0.2em] mt-4 print:mt-2 border-y-2 border-dashed border-black py-2 print:py-1">
+              {bill.billType === 'Delivery' && bill.orderSource && bill.orderSource !== 'Direct' 
+                ? `${bill.orderSource} Order` 
+                : 'Receipt'}
+            </h2>
           </div>
 
           {/* Bill Info */}
@@ -56,7 +81,11 @@ const Invoice = ({ bill, onClose, onSave }) => {
               <p>TIME: {new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
             <div className="space-y-2 print:space-y-1 text-right">
-              <p>TYPE: {bill.billType}</p>
+              {bill.billType === 'Delivery' && bill.orderSource && bill.orderSource !== 'Direct' ? (
+                <p className="text-orange-600 font-extrabold">{bill.orderSource} ORDER</p>
+              ) : (
+                <p>TYPE: {bill.billType}</p>
+              )}
               <p>TABLE: {bill.tableNo || 'N/A'}</p>
               {bill.customerName && <p className="break-words">CUSTOMER: {bill.customerName}</p>}
             </div>
@@ -125,8 +154,8 @@ const Invoice = ({ bill, onClose, onSave }) => {
 
           {/* Footer */}
           <div className="text-center text-xs uppercase space-y-1">
-            <p>*** Thank You! Visit Again ***</p>
-            <p>For Feedback: feedback@restopos.com</p>
+            <p>{settings.footerMessage}</p>
+            <p>For Feedback: {settings.email}</p>
           </div>
           
           {/* Cut Line Visual (Screen only) */}

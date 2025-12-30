@@ -39,6 +39,9 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
   const [taxRate, setTaxRate] = useState(''); 
   const [discount, setDiscount] = useState({ type: 'percentage', value: '' });
   
+  // Delivery order fields
+  const [orderSource, setOrderSource] = useState('Direct');
+  
   const [showPayment, setShowPayment] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [completedBill, setCompletedBill] = useState(null);
@@ -56,9 +59,22 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
+  // Auto-generate delivery order number when Delivery is selected
+  useEffect(() => {
+    if (billType === 'Delivery' && !activeTable) {
+      const timestamp = Date.now().toString().slice(-6);
+      const generatedOrderNo = `DEL-${timestamp}`;
+      setActiveTable(generatedOrderNo);
+    } else if (billType !== 'Delivery' && activeTable && activeTable.startsWith('DEL-')) {
+      setActiveTable('');
+    }
+  }, [billType]);
+
   // Fetch active order when table changes
   useEffect(() => {
-    fetchActiveOrder();
+    if (activeTable) {
+      fetchActiveOrder();
+    }
   }, [activeTable]);
 
   useEffect(() => {
@@ -75,14 +91,20 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
         setOrderId(order._id);
         setOrderStatus(order.status);
         setBillNumber(order.billNumber);
-        setBillType(order.billType);
-        // Restore tax/discount if needed, or keep defaults
+        setBillType(order.billType || 'Dine-In');
+        // Restore delivery fields if delivery order
+        if (order.billType === 'Delivery') {
+          setOrderSource(order.orderSource || 'Direct');
+        }
       } else {
         // Reset for new order
         setCart([]);
         setOrderId(null);
         setOrderStatus('Open');
         setBillNumber(null);
+        if (billType !== 'Delivery') {
+          setOrderSource('Direct');
+        }
       }
     } catch (error) {
       console.error('Error fetching active order:', error);
@@ -174,19 +196,38 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
   // Action Handlers
   const handleSaveOrder = async () => {
     if (!activeTable) {
-      showToast('Please select a table first', 'error');
-      return;
+      if (billType === 'Delivery') {
+        // Auto-generate delivery order number if not set
+        const timestamp = Date.now().toString().slice(-6);
+        const generatedOrderNo = `DEL-${timestamp}`;
+        setActiveTable(generatedOrderNo);
+        // Wait a bit for state to update, then proceed
+        setTimeout(() => handleSaveOrderWithTable(generatedOrderNo), 100);
+        return;
+      } else {
+        showToast('Please select a table first', 'error');
+        return;
+      }
     }
+    handleSaveOrderWithTable(activeTable);
+  };
+
+  const handleSaveOrderWithTable = async (tableNo) => {
     if (cart.length === 0) return;
     setLoading(true);
     try {
       const orderData = {
-        tableNo: activeTable,
+        tableNo: tableNo,
         items: cart,
-        billType
+        billType,
+        // Include delivery fields if delivery order
+        ...(billType === 'Delivery' && {
+          orderSource
+        })
       };
       const savedOrder = await saveOrder(orderData);
       setOrderId(savedOrder._id);
+      setActiveTable(tableNo); // Ensure table is set
       showToast('Order saved successfully!', 'success');
       fetchActiveOrder();
       if (onOrderUpdate) onOrderUpdate();
@@ -201,17 +242,55 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
   };
 
   const handleGenerateBill = async () => {
+    // For Delivery orders, auto-save if order doesn't exist
     if (!orderId) {
-      showToast('Please save the order first.', 'error');
-      return;
+      if (billType === 'Delivery') {
+        // Auto-generate delivery order number if not set
+        let tableToUse = activeTable;
+        if (!tableToUse) {
+          const timestamp = Date.now().toString().slice(-6);
+          tableToUse = `DEL-${timestamp}`;
+          setActiveTable(tableToUse);
+        }
+        // Save order first, then generate bill
+        setLoading(true);
+        try {
+          const orderData = {
+            tableNo: tableToUse,
+            items: cart,
+            billType: 'Delivery',
+            orderSource
+          };
+          const savedOrder = await saveOrder(orderData);
+          setOrderId(savedOrder._id);
+          // Now generate bill with the saved order
+          await generateBillAfterSave(savedOrder._id);
+        } catch (error) {
+          console.error('Error saving delivery order:', error);
+          const errorMessage = error.response?.data?.message || error.message;
+          showToast(`Failed to save order: ${errorMessage}`, 'error');
+          setLoading(false);
+        }
+        return;
+      } else {
+        showToast('Please save the order first.', 'error');
+        return;
+      }
     }
+    
+    // Generate bill for existing order
+    await generateBillAfterSave(orderId);
+  };
+
+  const generateBillAfterSave = async (orderIdToUse) => {
     setLoading(true);
     try {
       const billData = {
         discount: discountAmount,
         tax: taxVal
       };
-      const billedOrder = await generateBill(orderId, billData);
+      const billedOrder = await generateBill(orderIdToUse, billData);
+      setOrderId(billedOrder._id);
       setOrderStatus('Billed');
       setBillNumber(billedOrder.billNumber);
       setCompletedBill(billedOrder);
@@ -321,18 +400,24 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
         {/* Table Selector */}
         <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-1.5">
           <LayoutGrid size={16} className="text-text-muted" />
-          <select 
-            value={activeTable} 
-            onChange={(e) => setActiveTable(e.target.value)}
-            className="bg-transparent font-bold text-text-main focus:outline-none text-sm"
-          >
-            <option value="" >Select Table</option>
-            {[...Array(20)].map((_, i) => (
-              <option key={i} value={`TBL-${String(i + 1).padStart(2, '0')}`}>
-                Table {String(i + 1).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
+          {billType === 'Delivery' ? (
+            <div className="font-bold text-text-main text-sm">
+              {activeTable || 'DEL-XXXXXX'}
+            </div>
+          ) : (
+            <select 
+              value={activeTable} 
+              onChange={(e) => setActiveTable(e.target.value)}
+              className="bg-transparent font-bold text-text-main focus:outline-none text-sm"
+            >
+              <option value="" >Select Table</option>
+              {[...Array(20)].map((_, i) => (
+                <option key={i} value={`TBL-${String(i + 1).padStart(2, '0')}`}>
+                  Table {String(i + 1).padStart(2, '0')}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="flex-1 max-w-md mx-8">
@@ -376,21 +461,21 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
 
           {/* Right Panel: Summary */}
           <div className="flex flex-col overflow-hidden rounded-2xl shadow-xl shadow-primary/5 ring-1 ring-black/5 bg-surface">
-            <BillSummary 
-              cart={cart} 
+            <BillSummary
+              cart={cart}
               updateQuantity={updateQuantity}
               subtotal={subtotal}
               taxAmount={taxAmount}
               discountAmount={discountAmount}
               total={total}
-              
+
               // Lifecycle Props
               orderStatus={orderStatus}
               activeTable={activeTable}
               onSaveOrder={handleSaveOrder}
               onGenerateBill={handleGenerateBill}
               onSettleBill={() => setShowPayment(true)}
-              
+
               discount={discount}
               setDiscount={setDiscount}
               taxRate={taxRate}
@@ -398,6 +483,10 @@ const BillingPage = ({ initialTable, onOrderUpdate }) => {
               billType={billType}
               setBillType={setBillType}
               loading={loading}
+
+              // Delivery Props
+              orderSource={orderSource}
+              setOrderSource={setOrderSource}
             />
           </div>
         </div>
