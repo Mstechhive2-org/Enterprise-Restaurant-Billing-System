@@ -15,8 +15,8 @@ const allowedOrigins = [
   'https://restaurant-billing-frontend.vercel.app',
   'http://localhost:5175',
   // Allow from environment variable (comma-separated)
-  ...(process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*' 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim()) 
+  ...(process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*'
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : [])
 ];
 
@@ -24,12 +24,12 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     // If CORS_ORIGIN is '*', allow all origins
     if (process.env.CORS_ORIGIN === '*') {
       return callback(null, true);
     }
-    
+
     // Check if origin is in allowed list
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -43,8 +43,61 @@ const corsOptions = {
   exposedHeaders: ['Content-Type', 'Authorization']
 };
 
+// Security Middleware Imports
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import sanitize from 'mongo-sanitize';
+import xss from 'xss-clean';
+import hpp from 'hpp';
+
+// 1. Set Security HTTP Headers
+app.use(helmet());
+
+// 2. Limit requests from same API (Rate Limiting)
+const limiter = rateLimit({
+  max: 100, // Limit each IP to 100 requests per hour
+  windowMs: 60 * 60 * 1000,
+  message: 'Too many requests from this IP, please try again in an hour!'
+});
+app.use('/api', limiter);
+
 app.use(cors(corsOptions));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // Body limit is a good practice too
+
+// 3. Data sanitization against NoSQL query injection
+app.use((req, res, next) => {
+  try {
+    // Sanitize req.body
+    if (req.body) {
+      req.body = sanitize(req.body);
+    }
+
+    // Sanitize req.params
+    if (req.params) {
+      const cleanedParams = sanitize(req.params);
+      for (const key of Object.keys(req.params)) {
+        if (cleanedParams[key] === undefined) {
+          try { delete req.params[key]; } catch (e) { }
+        } else {
+          req.params[key] = cleanedParams[key];
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Security Sanitization Error:', error);
+  }
+
+  next();
+});
+
+// 4. Data sanitization against XSS (removed due to Express 5 compatibility)
+
+// 5. Prevent parameter pollution
+app.use(hpp());
+
+// Enable Gzip compression for better performance
+import compression from 'compression';
+app.use(compression());
 
 // Health check route
 app.get('/', (req, res) => {
@@ -103,7 +156,7 @@ const ensureDBConnection = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Database connection error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Database connection failed',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });

@@ -1,6 +1,5 @@
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import sessionManager from '../utils/sessionManager.js';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
@@ -12,32 +11,44 @@ export const login = async (req, res) => {
 
     const userId = user._id.toString();
 
-    // Set max concurrent logins based on role
+    // Determine max concurrent logins
     const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '1', 10);
     const customerMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '5', 10);
     const maxLogins = user.role === 'Admin' ? adminMaxLogins : customerMaxLogins;
-    sessionManager.setUserMaxLogins(userId, maxLogins);
+
+    // Check current active sessions
+    // Filter out expired sessions first (optional cleanup)
+    // user.activeSessions = user.activeSessions.filter(session => {
+    //   // Add logic here if we wanted to auto-remove expired tokens, but we rely on JWT expiry
+    //   return true; 
+    // });
+
+    if (user.activeSessions.length >= maxLogins) {
+      return res.status(403).json({
+        message: `Limited access for login: Maximum of ${maxLogins} device(s) allowed. Please logout from other devices.`
+      });
+    }
 
     const accessToken = jwt.sign(
       { id: userId, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' } // 24-hour access token for better UX
+      { expiresIn: '24h' }
     );
 
     const refreshToken = jwt.sign(
       { id: userId, role: user.role },
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30d' } // Long-lived refresh token
+      { expiresIn: '30d' }
     );
 
-    // Add session to session manager (will return false if limit reached)
-    const sessionAdded = sessionManager.addSession(userId, accessToken);
-    if (!sessionAdded) {
-      const activeCount = sessionManager.getActiveSessionCount(userId);
-      return res.status(403).json({
-        message: `Login limit reached. Only ${maxLogins} concurrent login${maxLogins > 1 ? 's' : ''} allowed. Currently ${activeCount} active session${activeCount > 1 ? 's' : ''}.`
-      });
-    }
+    // Add new session to database
+    user.activeSessions.push({
+      accessToken,
+      refreshToken,
+      lastActive: new Date()
+    });
+
+    await user.save();
 
     res.status(200).json({
       accessToken,
@@ -59,7 +70,10 @@ export const logout = async (req, res) => {
     const token = req.headers['authorization']?.split(' ')[1];
 
     if (token) {
-      sessionManager.removeSession(userId, token);
+      // Remove session from database
+      await User.findByIdAndUpdate(userId, {
+        $pull: { activeSessions: { accessToken: token } }
+      });
     }
 
     res.status(200).json({ message: 'Logged out successfully' });
@@ -78,6 +92,21 @@ export const refreshToken = async (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
 
+    // Check if user exists and has this refresh token in active sessions
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(403).json({ message: 'User not found' });
+    }
+
+    // Find the session with this refresh token
+    const sessionIndex = user.activeSessions.findIndex(s => s.refreshToken === token);
+
+    if (sessionIndex === -1) {
+      // Token reuse detection or valid token but session kicked/expired
+      return res.status(403).json({ message: 'Invalid refresh token (session expired or logged out)' });
+    }
+
     // Generate new access token
     const newAccessToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
@@ -85,18 +114,29 @@ export const refreshToken = async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    // Optionally generate new refresh token
+    // Generate new refresh token
     const newRefreshToken = jwt.sign(
       { id: decoded.id, role: decoded.role },
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
       { expiresIn: '30d' }
     );
 
+    // Update the session with new tokens (Token Rotation)
+    user.activeSessions[sessionIndex].accessToken = newAccessToken;
+    user.activeSessions[sessionIndex].refreshToken = newRefreshToken;
+    user.activeSessions[sessionIndex].lastActive = new Date();
+
+    await user.save();
+
     res.status(200).json({
       accessToken: newAccessToken,
       refreshToken: newRefreshToken
     });
   } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      // Optionally remove the expired session from DB here if we had the user ID
+      return res.status(403).json({ message: 'Refresh token expired' });
+    }
     res.status(403).json({ message: 'Invalid refresh token' });
   }
 };
@@ -115,18 +155,18 @@ export const register = async (req, res) => {
 // Create admin user (public if no admin exists, protected if admins exist)
 export const createAdmin = async (req, res) => {
   const { username, password } = req.body;
-  
+
   try {
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
-    
+
     // If admin exists, require authentication and admin role
     if (existingAdmin) {
       // Check if user is authenticated (req.user should be set by middleware if auth passed)
       if (!req.user) {
         return res.status(401).json({ message: 'Access token required. An admin already exists.' });
       }
-      
+
       // Check if user is an admin
       if (req.user.role !== 'Admin') {
         return res.status(403).json({ message: 'Admin access required to create additional admins.' });
@@ -157,7 +197,7 @@ export const createAdmin = async (req, res) => {
 
     await adminUser.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Admin user created successfully',
       user: {
         id: adminUser._id,
@@ -173,13 +213,13 @@ export const createAdmin = async (req, res) => {
 // Setup initial admin (only works if no admin exists - for initial setup)
 export const setupAdmin = async (req, res) => {
   const { username, password } = req.body;
-  
+
   try {
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
     if (existingAdmin) {
-      return res.status(403).json({ 
-        message: 'Admin user already exists. Use /api/auth/admin/create endpoint to create additional admins.' 
+      return res.status(403).json({
+        message: 'Admin user already exists. Use /api/auth/admin/create endpoint to create additional admins.'
       });
     }
 
@@ -207,7 +247,7 @@ export const setupAdmin = async (req, res) => {
 
     await adminUser.save();
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Initial admin user created successfully',
       user: {
         id: adminUser._id,

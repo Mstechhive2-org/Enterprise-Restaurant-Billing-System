@@ -8,12 +8,35 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
-    req.user = user;
-    next();
+
+    // Verify session still exists in DB (concurrent login check)
+    // We need to fetch the user to check activeSessions
+    import('../models/User.js').then(module => {
+      const User = module.default;
+      User.findById(decoded.id).then(user => {
+        if (!user) {
+          return res.status(401).json({ message: 'User not found' });
+        }
+
+        const isSessionValid = user.activeSessions.some(session => session.accessToken === token);
+
+        if (!isSessionValid) {
+          return res.status(401).json({ message: 'Session expired or invalid (logged out from another device)' });
+        }
+
+        req.user = user;
+        next();
+      }).catch(dbErr => {
+        return res.status(500).json({ message: 'Database error during authentication' });
+      });
+    }).catch(importErr => {
+      console.error("Failed to import User model", importErr);
+      return res.status(500).json({ message: 'Internal server error' });
+    });
   });
 };
 

@@ -16,17 +16,23 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['Admin', 'Cashier'],
     default: 'Cashier'
-  }
+  },
+  activeSessions: [{
+    accessToken: { type: String, required: true },
+    refreshToken: { type: String, required: true },
+    deviceId: { type: String }, // Optional
+    lastActive: { type: Date, default: Date.now }
+  }]
 }, {
   timestamps: true
 });
 
-userSchema.pre('save', async function() {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 10);
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
