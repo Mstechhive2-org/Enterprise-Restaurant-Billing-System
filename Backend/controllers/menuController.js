@@ -1,4 +1,5 @@
 import Menu from '../models/Menu.js';
+import Category from '../models/Category.js';
 
 export const getAllMenuItems = async (req, res) => {
   try {
@@ -11,7 +12,6 @@ export const getAllMenuItems = async (req, res) => {
 
 export const addMenuItem = async (req, res) => {
   try {
-    const Category = (await import('../models/Category.js')).default;
     let categoryData = req.body.category;
 
     // If category is a string, find the category by name
@@ -34,7 +34,6 @@ export const addMenuItem = async (req, res) => {
 
 export const updateMenuItem = async (req, res) => {
   try {
-    const Category = (await import('../models/Category.js')).default;
     let updateData = req.body;
 
     // If category is a string, find the category by name
