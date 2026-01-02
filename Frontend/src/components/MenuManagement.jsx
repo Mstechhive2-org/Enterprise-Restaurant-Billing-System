@@ -118,49 +118,51 @@ const MenuManagement = ({ user }) => {
 
   const validateItemForm = () => {
     const errors = {};
-    
+
     if (!formData.name || formData.name.trim() === '') {
       errors.name = 'Item name is required';
     }
-    
+
     if (!formData.category || formData.category === '') {
       errors.category = 'Category is required';
     }
-    
+
     const price = parseFloat(formData.price);
     if (!formData.price || formData.price === '') {
       errors.price = 'Price is required';
     } else if (isNaN(price) || price <= 0) {
       errors.price = 'Price must be a positive number';
     }
-    
+
     const taxRate = parseFloat(formData.taxRate);
     if (formData.taxRate !== '' && (isNaN(taxRate) || taxRate < 0)) {
       errors.taxRate = 'Tax rate must be a non-negative number';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateItemForm()) {
       setToast({ message: 'Please fix validation errors', type: 'error' });
       return;
     }
-    
+
     try {
       const price = parseFloat(formData.price);
       const taxRate = parseFloat(formData.taxRate) || 0;
-      
+
       const itemData = {
         ...formData,
         price,
         taxRate
       };
-      
+
+      console.log('Submitting menu item:', itemData);
+
       if (currentItem) {
         await updateMenuItem(currentItem._id, itemData);
         setToast({ message: 'Item updated successfully', type: 'success' });
@@ -173,7 +175,31 @@ const MenuManagement = ({ user }) => {
       setValidationErrors({});
     } catch (error) {
       console.error('Error saving item:', error);
-      setToast({ message: error.response?.data?.message || 'Failed to save item', type: 'error' });
+
+      // Extract meaningful error message
+      let errorMessage = 'Failed to save item';
+
+      if (error.response) {
+        // Server responded with error status
+        errorMessage = error.response.data?.message ||
+          error.response.data?.error ||
+          `Server error: ${error.response.status}`;
+        console.error('Server error details:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        // Request made but no response
+        errorMessage = 'No response from server. Please check your connection.';
+        console.error('No response received:', error.request);
+      } else {
+        // Error in request setup
+        errorMessage = error.message || 'Failed to save item';
+        console.error('Request setup error:', error.message);
+      }
+
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -208,24 +234,26 @@ const MenuManagement = ({ user }) => {
 
   const validateCategoryForm = () => {
     const errors = {};
-    
+
     if (!categoryFormData.name || categoryFormData.name.trim() === '') {
       errors.name = 'Category name is required';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!validateCategoryForm()) {
       setToast({ message: 'Please fix validation errors', type: 'error' });
       return;
     }
-    
+
     try {
+      console.log('Submitting category:', categoryFormData);
+
       if (currentCategory) {
         await updateCategory(currentCategory._id, categoryFormData);
         setToast({ message: 'Category updated successfully', type: 'success' });
@@ -238,7 +266,27 @@ const MenuManagement = ({ user }) => {
       setValidationErrors({});
     } catch (error) {
       console.error('Error saving category:', error);
-      setToast({ message: error.response?.data?.message || 'Failed to save category', type: 'error' });
+
+      // Extract meaningful error message
+      let errorMessage = 'Failed to save category';
+
+      if (error.response) {
+        errorMessage = error.response.data?.message ||
+          error.response.data?.error ||
+          `Server error: ${error.response.status}`;
+        console.error('Server error details:', {
+          status: error.response.status,
+          data: error.response.data
+        });
+      } else if (error.request) {
+        errorMessage = 'No response from server. Please check your connection.';
+        console.error('No response received:', error.request);
+      } else {
+        errorMessage = error.message || 'Failed to save category';
+        console.error('Request setup error:', error.message);
+      }
+
+      setToast({ message: errorMessage, type: 'error' });
     }
   };
 
@@ -347,9 +395,8 @@ const MenuManagement = ({ user }) => {
                       </span>
                     </td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        item.type === 'veg' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.type === 'veg' ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                        }`}>
                         {item.type === 'veg' ? 'Veg' : 'Non-Veg'}
                       </span>
                     </td>
@@ -405,9 +452,8 @@ const MenuManagement = ({ user }) => {
                     <td className="p-4 text-text-muted">{category.description || '-'}</td>
                     <td className="p-4 text-text-muted">{category.sortOrder}</td>
                     <td className="p-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        category.isActive ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${category.isActive ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'
+                        }`}>
                         {category.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -446,14 +492,14 @@ const MenuManagement = ({ user }) => {
             </table>
           )}
         </div>
-        
+
         {/* Pagination Controls */}
         {((activeTab === 'items' && itemsTotalPages > 1) || (activeTab === 'categories' && categoriesTotalPages > 1)) && (
           <div className="p-4 border-t border-border flex items-center justify-between bg-background">
             <div className="text-sm text-text-muted">
               Showing {activeTab === 'items' ? itemsStartIndex + 1 : categoriesStartIndex + 1} to{' '}
-              {activeTab === 'items' 
-                ? Math.min(itemsEndIndex, filteredItems.length) 
+              {activeTab === 'items'
+                ? Math.min(itemsEndIndex, filteredItems.length)
                 : Math.min(categoriesEndIndex, filteredCategories.length)
               } of{' '}
               {activeTab === 'items' ? filteredItems.length : filteredCategories.length}{' '}
@@ -480,11 +526,10 @@ const MenuManagement = ({ user }) => {
                       <button
                         key={page}
                         onClick={() => setCurrentPage(page)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                          currentPage === page
-                            ? 'bg-primary text-white'
-                            : 'bg-surface text-text-muted hover:bg-surface-hover hover:text-text-main border border-border'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                          ? 'bg-primary text-white'
+                          : 'bg-surface text-text-muted hover:bg-surface-hover hover:text-text-main border border-border'
+                          }`}
                       >
                         {page}
                       </button>
@@ -515,28 +560,27 @@ const MenuManagement = ({ user }) => {
               <h2 className="text-xl font-bold text-text-main">
                 {isViewMode ? 'View Item' : currentItem ? 'Edit Item' : 'Add New Item'}
               </h2>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-text-muted hover:text-text-main transition-colors"
               >
                 <X size={24} />
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-muted">Item Name</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   value={formData.name}
                   onChange={(e) => {
-                    setFormData({...formData, name: e.target.value});
-                    if (validationErrors.name) setValidationErrors({...validationErrors, name: null});
+                    setFormData({ ...formData, name: e.target.value });
+                    if (validationErrors.name) setValidationErrors({ ...validationErrors, name: null });
                   }}
-                  className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${
-                    validationErrors.name ? 'border-danger' : 'border-border'
-                  }`}
+                  className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${validationErrors.name ? 'border-danger' : 'border-border'
+                    }`}
                   placeholder="e.g. Butter Chicken"
                 />
                 {validationErrors.name && (
@@ -551,12 +595,11 @@ const MenuManagement = ({ user }) => {
                     required
                     value={formData.category}
                     onChange={(e) => {
-                      setFormData({...formData, category: e.target.value});
-                      if (validationErrors.category) setValidationErrors({...validationErrors, category: null});
+                      setFormData({ ...formData, category: e.target.value });
+                      if (validationErrors.category) setValidationErrors({ ...validationErrors, category: null });
                     }}
-                    className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${
-                      validationErrors.category ? 'border-danger' : 'border-border'
-                    }`}
+                    className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${validationErrors.category ? 'border-danger' : 'border-border'
+                      }`}
                   >
                     <option value="">Select Category</option>
                     {categories.map(cat => (
@@ -571,19 +614,18 @@ const MenuManagement = ({ user }) => {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm font-medium text-text-muted">Price (₹)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     required
                     min="0"
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => {
-                      setFormData({...formData, price: e.target.value});
-                      if (validationErrors.price) setValidationErrors({...validationErrors, price: null});
+                      setFormData({ ...formData, price: e.target.value });
+                      if (validationErrors.price) setValidationErrors({ ...validationErrors, price: null });
                     }}
-                    className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${
-                      validationErrors.price ? 'border-danger' : 'border-border'
-                    }`}
+                    className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${validationErrors.price ? 'border-danger' : 'border-border'
+                      }`}
                     placeholder="0.00"
                   />
                   {validationErrors.price && (
@@ -596,23 +638,23 @@ const MenuManagement = ({ user }) => {
                 <label className="text-sm font-medium text-text-muted">Type</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="type" 
+                    <input
+                      type="radio"
+                      name="type"
                       value="veg"
                       checked={formData.type === 'veg'}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                       className="text-primary focus:ring-primary"
                     />
                     <span className="text-text-main">Veg</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="type" 
+                    <input
+                      type="radio"
+                      name="type"
                       value="non-veg"
                       checked={formData.type === 'non-veg'}
-                      onChange={(e) => setFormData({...formData, type: e.target.value})}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                       className="text-primary focus:ring-primary"
                     />
                     <span className="text-text-main">Non-Veg</span>
@@ -622,9 +664,9 @@ const MenuManagement = ({ user }) => {
 
               <div className="space-y-1">
                 <label className="text-sm font-medium text-text-muted">Description</label>
-                <textarea 
+                <textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary h-24 resize-none"
                   placeholder="Item description..."
                 />
@@ -669,12 +711,11 @@ const MenuManagement = ({ user }) => {
                   required
                   value={categoryFormData.name}
                   onChange={(e) => {
-                    setCategoryFormData({...categoryFormData, name: e.target.value});
-                    if (validationErrors.name) setValidationErrors({...validationErrors, name: null});
+                    setCategoryFormData({ ...categoryFormData, name: e.target.value });
+                    if (validationErrors.name) setValidationErrors({ ...validationErrors, name: null });
                   }}
-                  className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${
-                    validationErrors.name ? 'border-danger' : 'border-border'
-                  }`}
+                  className={`w-full bg-background border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary ${validationErrors.name ? 'border-danger' : 'border-border'
+                    }`}
                   placeholder="e.g. Main Course"
                 />
                 {validationErrors.name && (
@@ -686,7 +727,7 @@ const MenuManagement = ({ user }) => {
                 <label className="text-sm font-medium text-text-muted">Description</label>
                 <textarea
                   value={categoryFormData.description}
-                  onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
                   className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary h-24 resize-none"
                   placeholder="Category description..."
                 />
@@ -697,7 +738,7 @@ const MenuManagement = ({ user }) => {
                 <input
                   type="number"
                   value={categoryFormData.sortOrder}
-                  onChange={(e) => setCategoryFormData({...categoryFormData, sortOrder: e.target.value})}
+                  onChange={(e) => setCategoryFormData({ ...categoryFormData, sortOrder: e.target.value })}
                   className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary"
                   placeholder="0"
                 />

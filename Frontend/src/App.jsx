@@ -9,6 +9,7 @@ const Analytics = React.lazy(() => import('./components/Analytics'));
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
 const Settings = React.lazy(() => import('./components/Settings'));
 const DeliveryOrders = React.lazy(() => import('./components/DeliveryOrders'));
+import SessionManager from './components/SessionManager';
 import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
@@ -128,6 +129,9 @@ function App() {
 
   return (
     <div className="h-screen flex bg-background text-text-main font-sans">
+      {/* Session Manager - automatically logs out on token expiry */}
+      <SessionManager />
+
       {/* Sidebar */}
       <aside className="w-64 bg-surface flex flex-col shrink-0 shadow-xl z-20">
         <div className="h-20 flex items-center px-6">
