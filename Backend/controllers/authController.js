@@ -19,15 +19,22 @@ export const login = async (req, res) => {
     //   return true; 
     // });
 
-    // Clean up expired sessions first
+    // Clean up expired sessions first (check both access and refresh tokens)
     const now = new Date();
     user.activeSessions = user.activeSessions.filter(session => {
       try {
         // Check if access token is expired
-        const decoded = jwt.decode(session.accessToken);
-        if (!decoded || decoded.exp * 1000 < now.getTime()) {
-          return false; // Remove expired session
+        const accessDecoded = jwt.decode(session.accessToken);
+        if (!accessDecoded || accessDecoded.exp * 1000 < now.getTime()) {
+          return false; // Remove expired access token session
         }
+
+        // Also check if refresh token is expired
+        const refreshDecoded = jwt.decode(session.refreshToken);
+        if (!refreshDecoded || refreshDecoded.exp * 1000 < now.getTime()) {
+          return false; // Remove expired refresh token session
+        }
+
         return true;
       } catch (err) {
         return false; // Remove invalid sessions
@@ -110,6 +117,28 @@ export const logout = async (req, res) => {
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
+    res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+};
+
+export const logoutAll = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+
+    if (userId) {
+      // Remove all sessions from database
+      const user = await User.findById(userId);
+      if (user) {
+        const sessionCount = user.activeSessions.length;
+        user.activeSessions = [];
+        await user.save();
+        console.log(`Logged out ${sessionCount} sessions for user ${user.username}`);
+      }
+    }
+
+    res.status(200).json({ message: 'All sessions logged out successfully' });
+  } catch (error) {
+    console.error('Logout all error:', error);
     res.status(500).json({ message: error.message || 'Internal server error' });
   }
 };

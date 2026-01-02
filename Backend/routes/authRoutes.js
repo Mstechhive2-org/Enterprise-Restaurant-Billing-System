@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { login, logout, refreshToken, createAdmin, setupAdmin } from '../controllers/authController.js';
+import { login, logout, logoutAll, refreshToken, createAdmin, setupAdmin } from '../controllers/authController.js';
 import sessionManager from '../utils/sessionManager.js';
 import { authenticateToken, requireAdmin, optionalAuthenticateToken } from '../middleware/auth.js';
 
@@ -14,6 +14,7 @@ router.post('/clear-sessions', (req, res) => {
 
 // Protected routes
 router.post('/logout', authenticateToken, logout);
+router.post('/logout-all', authenticateToken, logoutAll);
 
 // Admin routes (public if no admin exists, protected if admins exist)
 // Uses optional auth middleware so token is verified if provided, but not required

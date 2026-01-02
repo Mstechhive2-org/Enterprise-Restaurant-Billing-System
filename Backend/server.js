@@ -190,12 +190,16 @@ import billRoutes from './routes/billRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import startSessionCleanupJob from './utils/sessionCleanup.js';
 
 app.use('/api/menu', menuRoutes);
 app.use('/api/bills', billRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Start background session cleanup job
+startSessionCleanupJob();
 
 // Initialize connection for serverless (non-blocking)
 // Connection will be established on first request via middleware
