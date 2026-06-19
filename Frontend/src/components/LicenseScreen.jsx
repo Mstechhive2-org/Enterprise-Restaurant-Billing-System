@@ -1,0 +1,130 @@
+import React, { useState } from 'react';
+import { Shield, Key, Loader2, ServerCrash } from 'lucide-react';
+
+const LicenseScreen = ({ onValidLicense }) => {
+  const [licenseKey, setLicenseKey] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleActivate = async (e) => {
+    e.preventDefault();
+    if (!licenseKey.trim()) {
+      setError('Please enter a valid license key.');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // In a real Electron app, we would get the actual MAC address via IPC.
+      // For now, we simulate a hardware ID bound to this local storage.
+      let hardwareId = localStorage.getItem('resto_hwid');
+      if (!hardwareId) {
+        hardwareId = 'HW-' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('resto_hwid', hardwareId);
+      }
+
+      const response = await fetch('http://localhost:4000/api/clients/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ licenseKey: licenseKey.trim(), hardwareId })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        // License is valid!
+        localStorage.setItem('resto_license', licenseKey.trim());
+        localStorage.setItem('resto_license_expiry', data.validUntil);
+        onValidLicense();
+      } else {
+        setError(data.message || 'Invalid license key.');
+      }
+    } catch (err) {
+      setError('Could not connect to the activation server. Please check your internet connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+        
+        {/* Header Header */}
+        <div className="bg-primary p-8 text-center text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+          <div className="relative z-10 flex justify-center mb-4">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/30 shadow-xl">
+              <Shield size={32} className="text-white" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-black relative z-10">msbilling</h1>
+          <p className="text-primary-100 mt-2 font-medium relative z-10">Software Activation Required</p>
+        </div>
+
+        {/* Form */}
+        <div className="p-8">
+          <p className="text-center text-text-muted mb-6 text-sm">
+            Please enter the License Key you received in your email to unlock the software. This requires an internet connection for first-time activation.
+          </p>
+
+          <form onSubmit={handleActivate} className="space-y-6">
+            <div>
+              <label className="block text-sm font-bold text-text-main mb-2 uppercase tracking-wide">
+                License Key
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <Key size={18} className="text-text-muted" />
+                </div>
+                <input
+                  type="text"
+                  value={licenseKey}
+                  onChange={(e) => setLicenseKey(e.target.value.toUpperCase())}
+                  placeholder="MSBILL-XXXX-YYYY-ZZZZ"
+                  className="w-full pl-11 pr-4 py-3 bg-surface border-2 border-border rounded-xl text-lg font-bold text-text-main uppercase tracking-wider focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 transition-all placeholder:text-gray-300"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="bg-danger/10 border border-danger/20 text-danger p-4 rounded-xl flex items-start gap-3 animate-in slide-in-from-top-2">
+                <ServerCrash size={20} className="shrink-0 mt-0.5" />
+                <p className="text-sm font-bold">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !licenseKey.trim()}
+              className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span>Verifying License...</span>
+                </>
+              ) : (
+                <>
+                  <Shield size={20} />
+                  <span>Activate Software</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div className="bg-surface p-4 text-center border-t border-border">
+          <p className="text-xs text-text-muted font-medium">
+            Need a license? Visit <a href="https://mstechhive.com" className="text-primary hover:underline font-bold">mstechhive.com</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LicenseScreen;

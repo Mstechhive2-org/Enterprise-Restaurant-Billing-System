@@ -277,13 +277,6 @@ const BillHistory = () => {
                         >
                           <Eye size={18} />
                         </button>
-                        <button 
-                          onClick={() => handleDeleteClick(bill._id)}
-                          className="p-2 hover:bg-danger/10 rounded-lg text-danger transition-colors inline-flex items-center gap-2"
-                          title="Delete Bill"
-                        >
-                          <Trash2 size={18} />
-                        </button>
                       </div>
                     </td>
                   </tr>
@@ -355,16 +348,6 @@ const BillHistory = () => {
           onClose={() => setSelectedBill(null)} 
         />
       )}
-
-      <ConfirmationModal 
-        isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, billId: null })}
-        onConfirm={confirmDelete}
-        title="Delete Bill"
-        message="Are you sure you want to delete this bill? This action cannot be undone."
-        confirmText="Delete"
-        isDanger={true}
-      />
 
       {toast && (
         <Toast

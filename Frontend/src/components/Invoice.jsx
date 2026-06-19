@@ -3,11 +3,11 @@ import { Printer, ArrowLeft, Download, Save } from 'lucide-react';
 
 const Invoice = ({ bill, onClose, onSave }) => {
   const [settings, setSettings] = useState({
-    restaurantName: 'RestoPOS',
+    restaurantName: 'msbillings',
     restaurantType: 'Restaurant',
     address: '123 Foodie Street, Gourmet City',
     phone: '+91 98765 43210',
-    email: 'feedback@restopos.com',
+    email: 'feedback@msbillings.com',
     gstin: '29ABCDE1234F1Z5',
     footerMessage: '*** Thank You! Visit Again ***'
   });
@@ -55,9 +55,9 @@ const Invoice = ({ bill, onClose, onSave }) => {
 
       {/* Receipt Preview */}
       <div className="receipt-print bg-white text-black font-mono w-full max-w-2xl shadow-2xl print:shadow-none border-2 border-black m-10 print:m-0 print:max-w-none print:border-0 overflow-hidden">
-        <div className="p-8 print:p-4">
+        <div className="p-8 print:p-0 print:pb-2">
           {/* Header */}
-          <div className="text-center mb-6 print:mb-4">
+          <div className="text-center mb-6 print:mb-2 print:mt-1">
             <h1 className="text-2xl print:text-xl font-bold uppercase tracking-wider mb-1">{settings.restaurantName}</h1>
             <div className="text-xs uppercase">
               {settings.address.split('\n').map((line, i) => (
@@ -145,7 +145,7 @@ const Invoice = ({ bill, onClose, onSave }) => {
                 </div>
                 {bill.paymentMode && (
                   <div className="text-sm uppercase mt-2 print:mt-1 text-center bg-blue-50 print:bg-transparent p-2 print:p-1 rounded print:rounded-none">
-                    Payment: {bill.paymentMode}
+                    Payment: {bill.paymentMode}{bill.paymentMode === 'UPI' && bill.upiApp ? ` (${bill.upiApp})` : ''}
                   </div>
                 )}
               </div>

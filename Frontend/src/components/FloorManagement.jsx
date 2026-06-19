@@ -1,0 +1,372 @@
+import React, { useState, useEffect } from 'react';
+import { getOpenOrders } from '../api/billing';
+import { Plus, Coffee, Home, Trash2, Sofa, Utensils, CheckCircle, Clock } from 'lucide-react';
+import Toast from './Toast';
+
+const FloorManagement = ({ onNavigate }) => {
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
+  
+  const [promptModal, setPromptModal] = useState({ isOpen: false, title: '', placeholder: '', onConfirm: null });
+  const [promptInput, setPromptInput] = useState('');
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+
+  const [floors, setFloors] = useState(() => {
+    const saved = localStorage.getItem('msbillings_spaces');
+    if (saved) {
+      let parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) {
+        parsed = [{
+          id: 'f-default',
+          name: 'Ground Floor',
+          tables: parsed.tables || [],
+          cabins: parsed.cabins || [],
+          sofas: parsed.sofas || []
+        }];
+      }
+      return parsed;
+    }
+    return [{
+      id: 'f-1',
+      name: 'Ground Floor',
+      tables: [{ id: 't1', name: 'Table 1' }, { id: 't2', name: 'Table 2' }, { id: 't3', name: 'Table 3' }],
+      cabins: [{ id: 'c1', name: 'Cabin 1' }, { id: 'c2', name: 'Cabin 2' }],
+      sofas: [{ id: 's1', name: 'Sofa 1' }]
+    }];
+  });
+
+  const [activeFloorId, setActiveFloorId] = useState(() => floors[0]?.id || null);
+
+  useEffect(() => {
+    localStorage.setItem('msbillings_spaces', JSON.stringify(floors));
+  }, [floors]);
+
+  useEffect(() => {
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await getOpenOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error('Error fetching open orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddFloor = () => {
+    setPromptInput('');
+    setPromptModal({
+      isOpen: true,
+      title: 'Add New Floor',
+      placeholder: 'Enter new floor name (e.g., First Floor)',
+      onConfirm: (name) => {
+        if (name && name.trim() !== '') {
+          const newFloorId = Date.now().toString();
+          setFloors(prev => [...prev, { id: newFloorId, name: name.trim(), tables: [], cabins: [], sofas: [] }]);
+          setActiveFloorId(newFloorId);
+          setToast({ message: 'Floor added successfully!', type: 'success' });
+        }
+      }
+    });
+  };
+
+  const handleRemoveFloor = (e, id) => {
+    e.stopPropagation();
+    setConfirmModal({
+      isOpen: true,
+      title: 'Remove Floor',
+      message: 'Are you sure you want to completely remove this floor and all its tables?',
+      onConfirm: () => {
+        setFloors(prev => {
+          const nextFloors = prev.filter(f => f.id !== id);
+          if (activeFloorId === id) {
+            setActiveFloorId(nextFloors[0]?.id || null);
+          }
+          return nextFloors;
+        });
+      }
+    });
+  };
+
+  const handleAddSpace = (type) => {
+    if (!activeFloorId) return;
+    setPromptInput('');
+    setPromptModal({
+      isOpen: true,
+      title: `Add New ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      placeholder: `Enter name for new ${type}`,
+      onConfirm: (name) => {
+        if (name && name.trim() !== '') {
+          setFloors(prev => prev.map(floor => {
+            if (floor.id === activeFloorId) {
+              const key = type + 's';
+              return {
+                ...floor,
+                [key]: [...(floor[key] || []), { id: Date.now().toString(), name: name.trim() }]
+              };
+            }
+            return floor;
+          }));
+          setToast({ message: `${type} added successfully!`, type: 'success' });
+        }
+      }
+    });
+  };
+
+  const handleRemoveSpace = (e, type, id) => {
+    e.stopPropagation();
+    setConfirmModal({
+      isOpen: true,
+      title: `Remove ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      message: `Are you sure you want to remove this ${type}?`,
+      onConfirm: () => {
+        setFloors(prev => prev.map(floor => {
+          if (floor.id === activeFloorId) {
+            const key = type + 's';
+            return {
+              ...floor,
+              [key]: floor[key].filter(item => item.id !== id)
+            };
+          }
+          return floor;
+        }));
+      }
+    });
+  };
+
+  const handleSpaceClick = (spaceName) => {
+    // If we click a table, it navigates to billing with this table preset
+    // The App.jsx needs to pass this initialTable down.
+    onNavigate('billing', spaceName);
+  };
+
+  const getSpaceOrder = (spaceName) => {
+    return orders.find(o => o.tableNo.toLowerCase() === spaceName.toLowerCase());
+  };
+
+  const renderSpaceCard = (item, type, IconComponent) => {
+    const currentFloor = floors.find(f => f.id === activeFloorId);
+    const uniqueSpaceName = currentFloor ? `${currentFloor.name} - ${item.name}` : item.name;
+    const activeOrder = getSpaceOrder(uniqueSpaceName);
+    const isOccupied = !!activeOrder;
+
+    return (
+      <div 
+        key={item.id} 
+        onClick={() => handleSpaceClick(uniqueSpaceName)}
+        className={`group relative flex flex-col justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 ${
+          isOccupied 
+            ? 'bg-orange-50/80 border-orange-200 hover:border-orange-400' 
+            : 'bg-emerald-50/80 border-emerald-200 hover:border-emerald-400'
+        }`}
+      >
+        <div className="flex justify-between items-start mb-4">
+          <div className={`p-2.5 rounded-xl ${isOccupied ? 'bg-orange-200/50 text-orange-600' : 'bg-emerald-200/50 text-emerald-600'}`}>
+            <IconComponent size={24} />
+          </div>
+          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
+            isOccupied ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
+          }`}>
+            {isOccupied ? 'Occupied' : 'Free'}
+          </span>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-bold text-text-main mb-1">{item.name}</h3>
+          {isOccupied ? (
+            <div className="flex items-center gap-2 text-sm text-orange-700 font-semibold">
+              <Clock size={14} />
+              <span>₹{activeOrder.total.toLocaleString()}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
+              <CheckCircle size={14} />
+              <span>Available</span>
+            </div>
+          )}
+        </div>
+
+        <button 
+          onClick={(e) => handleRemoveSpace(e, type, item.id)} 
+          className="absolute -top-3 -right-3 bg-danger text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-background">
+      <div className="p-6 border-b border-border bg-gradient-to-r from-primary/5 to-accent/5 flex justify-between items-center shrink-0">
+        <div>
+          <h2 className="text-2xl font-bold text-text-main flex items-center gap-3">
+            <Home className="text-primary" />
+            Floor Management
+          </h2>
+          <p className="text-text-muted mt-1 text-sm">Manage your tables, cabins, and see real-time occupancy.</p>
+        </div>
+      </div>
+
+      <div className="px-6 pt-4 border-b border-border bg-background flex gap-2 overflow-x-auto">
+        {floors.map(floor => (
+          <div 
+            key={floor.id}
+            onClick={() => setActiveFloorId(floor.id)}
+            className={`group relative flex items-center gap-2 px-5 py-3 border-b-2 font-bold cursor-pointer transition-colors whitespace-nowrap ${
+              activeFloorId === floor.id 
+                ? 'border-primary text-primary bg-primary/5 rounded-t-xl' 
+                : 'border-transparent text-text-muted hover:text-text-main hover:bg-surface-hover rounded-t-xl'
+            }`}
+          >
+            {floor.name}
+            {floors.length > 1 && (
+               <button 
+                 onClick={(e) => handleRemoveFloor(e, floor.id)} 
+                 className={`p-1 rounded-full ${activeFloorId === floor.id ? 'hover:bg-primary/20 text-primary' : 'hover:bg-border text-text-muted'} opacity-0 group-hover:opacity-100 transition-opacity`}
+               >
+                 <Trash2 size={14}/>
+               </button>
+            )}
+          </div>
+        ))}
+        <button 
+          onClick={handleAddFloor} 
+          className="flex items-center gap-2 px-5 py-3 border-b-2 border-transparent text-text-muted hover:text-primary font-bold cursor-pointer transition-colors whitespace-nowrap rounded-t-xl"
+        >
+          <Plus size={16} /> Add Floor
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        
+        {/* Tables Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+              <Coffee className="text-primary" size={20} />
+              Dining Tables
+            </h3>
+            <button onClick={() => handleAddSpace('table')} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-colors font-semibold text-sm">
+              <Plus size={16} /> Add Table
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {floors.find(f => f.id === activeFloorId)?.tables?.map(table => renderSpaceCard(table, 'table', Coffee))}
+          </div>
+        </section>
+
+        {/* Cabins Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+              <Home className="text-accent" size={20} />
+              Private Cabins
+            </h3>
+            <button onClick={() => handleAddSpace('cabin')} className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 text-accent hover:bg-accent hover:text-white rounded-lg transition-colors font-semibold text-sm">
+              <Plus size={16} /> Add Cabin
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {floors.find(f => f.id === activeFloorId)?.cabins?.map(cabin => renderSpaceCard(cabin, 'cabin', Home))}
+          </div>
+        </section>
+
+        {/* Sofas Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+              <Sofa className="text-secondary" size={20} />
+              Sofa Lounge
+            </h3>
+            <button onClick={() => handleAddSpace('sofa')} className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/10 text-secondary hover:bg-secondary hover:text-white rounded-lg transition-colors font-semibold text-sm">
+              <Plus size={16} /> Add Sofa
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {floors.find(f => f.id === activeFloorId)?.sofas?.map(sofa => renderSpaceCard(sofa, 'sofa', Sofa))}
+          </div>
+        </section>
+
+      </div>
+
+      {/* Custom Prompt Modal */}
+      {promptModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-surface rounded-2xl w-full max-w-md shadow-2xl p-6 transform scale-100 transition-all border border-border/50">
+            <h3 className="text-xl font-bold text-text-main mb-2">{promptModal.title}</h3>
+            <p className="text-sm text-text-muted mb-6">Please enter the details below.</p>
+            <input 
+              type="text" 
+              autoFocus
+              value={promptInput}
+              onChange={(e) => setPromptInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  promptModal.onConfirm(promptInput);
+                  setPromptModal({ isOpen: false, onConfirm: null });
+                }
+              }}
+              placeholder={promptModal.placeholder}
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-text-main font-medium mb-6"
+            />
+            <div className="flex items-center justify-end gap-3">
+              <button 
+                onClick={() => setPromptModal({ isOpen: false, onConfirm: null })}
+                className="px-5 py-2.5 rounded-xl font-bold text-text-muted hover:bg-surface-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  promptModal.onConfirm(promptInput);
+                  setPromptModal({ isOpen: false, onConfirm: null });
+                }}
+                className="px-5 py-2.5 rounded-xl font-bold bg-primary text-white hover:shadow-lg hover:shadow-primary/30 transition-all"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-surface rounded-2xl w-full max-w-md shadow-2xl p-6 transform scale-100 transition-all border border-border/50">
+            <h3 className="text-xl font-bold text-text-main mb-3">{confirmModal.title}</h3>
+            <p className="text-base text-text-muted mb-6">{confirmModal.message}</p>
+            <div className="flex items-center justify-end gap-3">
+              <button 
+                onClick={() => setConfirmModal({ isOpen: false, onConfirm: null })}
+                className="px-5 py-2.5 rounded-xl font-bold text-text-muted hover:bg-surface-hover transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal({ isOpen: false, onConfirm: null });
+                }}
+                className="px-5 py-2.5 rounded-xl font-bold bg-danger text-white hover:shadow-lg hover:shadow-danger/30 transition-all"
+              >
+                Yes, Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
+  );
+};
+
+export default FloorManagement;

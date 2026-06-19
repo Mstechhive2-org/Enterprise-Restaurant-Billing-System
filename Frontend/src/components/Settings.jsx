@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Phone, MapPin, Mail, FileText, Settings as SettingsIcon } from 'lucide-react';
+import { Save, Building, Phone, MapPin, Mail, FileText, Settings as SettingsIcon, User } from 'lucide-react';
 import Toast from './Toast';
+import { apiUpdateProfile } from '../api/auth';
 
-const Settings = () => {
+const Settings = ({ user, setUser }) => {
   const [settings, setSettings] = useState({
     restaurantName: 'ABC RESTAURANT',
     restaurantType: 'South Indian & Chinese',
@@ -13,6 +14,7 @@ const Settings = () => {
     footerMessage: '*** THANK YOU! VISIT AGAIN ***'
   });
 
+  const [username, setUsername] = useState(user ? user.username : '');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -27,11 +29,20 @@ const Settings = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Save to localStorage
+      // Save restaurant settings to localStorage
       localStorage.setItem('restaurantSettings', JSON.stringify(settings));
 
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: settings }));
+
+      // Save profile name
+      if (username !== user?.username) {
+        const response = await apiUpdateProfile(username);
+        // Update global user state
+        setUser(response.user);
+        // Update localStorage user
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
 
       setToast({ message: 'Settings saved successfully!', type: 'success' });
     } catch (error) {
@@ -76,14 +87,40 @@ const Settings = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Restaurant Information */}
-          <div className="bg-surface rounded-2xl p-4 border border-border shadow-lg">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-                <Building className="text-primary" size={20} />
+          
+          <div className="flex flex-col gap-4">
+            {/* Profile Information */}
+            <div className="bg-surface rounded-2xl p-4 border border-border shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <User className="text-primary" size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-text-main">Profile Information</h2>
               </div>
-              <h2 className="text-xl font-bold text-text-main">Restaurant Information</h2>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                  <User size={14} />
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main"
+                  placeholder="Enter username"
+                />
+              </div>
             </div>
+
+            {/* Restaurant Information */}
+            <div className="bg-surface rounded-2xl p-4 border border-border shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <Building className="text-primary" size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-text-main">Restaurant Information</h2>
+              </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Restaurant Name */}
@@ -206,6 +243,7 @@ const Settings = () => {
                 />
               </div>
             </div>
+          </div>
           </div>
 
           {/* Preview Section */}

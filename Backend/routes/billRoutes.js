@@ -8,8 +8,12 @@ import {
   getBills, 
   getBillById, 
   deleteBill, 
-  getOpenOrders, 
-  getDailyStats 
+  getOpenOrders,
+  getDailyStats,
+  generateKOT,
+  getTodayKOTs,
+  reopenOrder,
+  cancelOrder
 } from '../controllers/billController.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
@@ -18,13 +22,17 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 router.get('/active/:tableNo', authenticateToken, getActiveOrder);
 router.get('/open', authenticateToken, getOpenOrders);
 router.get('/stats', authenticateToken, getDailyStats);
+router.get('/kots/today', authenticateToken, getTodayKOTs);
 router.get('/', authenticateToken, getBills);
 router.get('/:id', authenticateToken, getBillById);
 
 // POST routes - authenticated users only
 router.post('/save', authenticateToken, saveOrder);
 router.post('/generate/:id', authenticateToken, generateBill);
+router.post('/reopen/:id', authenticateToken, reopenOrder);
+router.post('/cancel/:id', authenticateToken, cancelOrder);
 router.post('/settle/:id', authenticateToken, settleBill);
+router.post('/kot/:id', authenticateToken, generateKOT);
 
 // DELETE - Admin only
 router.delete('/:id', authenticateToken, requireAdmin, deleteBill);

@@ -20,32 +20,35 @@ if (typeof document !== 'undefined') {
 }
 
 const BillSummary = ({
-   cart,
-   updateQuantity,
-   subtotal,
-   taxAmount,
-   discountAmount,
-   total,
+  cart,
+  updateQuantity,
+  subtotal,
+  taxAmount,
+  discountAmount,
+  total,
 
-   // Lifecycle Props
-   orderStatus,
-   activeTable,
-   onSaveOrder,
-   onGenerateBill,
-   onSettleBill,
+  // Lifecycle Props
+  orderStatus,
+  activeTable,
+  onSaveOrder,
+  onGenerateBill,
+  onSettleBill,
+  onPrintKOT,
+  onReopenOrder,
+  onCancelOrder,
 
-   discount,
-   setDiscount,
-   taxRate,
-   setTaxRate,
-   billType,
-   setBillType,
-   loading,
+  discount,
+  setDiscount,
+  taxRate,
+  setTaxRate,
+  billType,
+  setBillType,
+  loading,
 
-   // Delivery Props
-   orderSource,
-   setOrderSource
- }) => {
+  // Delivery Props
+  orderSource,
+  setOrderSource
+}) => {
   const isLocked = orderStatus !== 'Open';
 
   return (
@@ -58,11 +61,10 @@ const BillSummary = ({
           <h2 className="text-sm font-bold text-text-main font-mono tracking-tight">CURRENT ORDER</h2>
           <div className="flex items-center gap-2 text-[10px] text-text-muted mt-0.5 font-mono">
             <span className="font-bold text-primary">{activeTable}</span>
-            <span className={`px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold ${
-              orderStatus === 'Open' ? 'bg-blue-100 text-blue-700' :
-              orderStatus === 'Billed' ? 'bg-orange-100 text-orange-700' :
-              'bg-green-100 text-green-700'
-            }`}>
+            <span className={`px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold ${orderStatus === 'Open' ? 'bg-blue-100 text-blue-700' :
+                orderStatus === 'Billed' ? 'bg-orange-100 text-orange-700' :
+                  'bg-green-100 text-green-700'
+              }`}>
               {orderStatus}
             </span>
           </div>
@@ -93,10 +95,10 @@ const BillSummary = ({
       </div>
 
 
-      <div 
+      <div
         className={`${billType === 'Delivery' ? 'flex-none hide-scrollbar' : 'flex-1'} overflow-y-auto p-4 space-y-2 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]`}
-        style={billType === 'Delivery' ? { 
-          height: '17vh', 
+        style={billType === 'Delivery' ? {
+          height: '17vh',
           minHeight: '100px'
         } : {}}
       >
@@ -114,9 +116,9 @@ const BillSummary = ({
                 <h4 className="font-bold text-text-main text-sm font-mono">{item.name}</h4>
                 <p className="text-xs text-text-muted font-mono">@ ₹{item.price}</p>
               </div>
-              
+
               <div className="flex items-center gap-3 bg-background rounded border border-border px-2 py-1 mx-4 shadow-sm">
-                <button 
+                <button
                   onClick={() => updateQuantity(item._id || item.name, -1)}
                   disabled={isLocked || loading}
                   className="w-5 h-5 flex items-center justify-center rounded hover:bg-danger hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -124,7 +126,7 @@ const BillSummary = ({
                   {item.quantity === 1 ? <Trash2 size={12} /> : <Minus size={12} />}
                 </button>
                 <span className="text-sm font-bold w-6 text-center font-mono">{item.quantity}</span>
-                <button 
+                <button
                   onClick={() => updateQuantity(item._id || item.name, 1)}
                   disabled={isLocked || loading}
                   className="w-5 h-5 flex items-center justify-center rounded hover:bg-success hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -132,7 +134,7 @@ const BillSummary = ({
                   <Plus size={12} />
                 </button>
               </div>
-              
+
               <div className="font-bold text-text-main w-16 text-right font-mono">
                 ₹{item.price * item.quantity}
               </div>
@@ -141,7 +143,7 @@ const BillSummary = ({
         )}
       </div>
 
-      <div 
+      <div
         className="flex-none bg-surface border-t-2 border-dashed border-border/50 shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)] z-10 relative"
         style={billType !== 'Delivery' ? { height: '45vh' } : {}}
       >
@@ -153,21 +155,21 @@ const BillSummary = ({
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono">Discount</label>
               <div className="flex rounded border border-border overflow-hidden bg-background">
-                <select 
-                  value={discount.type} 
-                  onChange={(e) => setDiscount({...discount, type: e.target.value})}
+                <select
+                  value={discount.type}
+                  onChange={(e) => setDiscount({ ...discount, type: e.target.value })}
                   disabled={isLocked || loading}
                   className="bg-background px-2 text-xs focus:outline-none border-r border-border font-mono text-text-main disabled:opacity-50"
                 >
                   <option value="percentage">%</option>
                   <option value="flat">₹</option>
                 </select>
-                <input 
-                  type="number" 
-                  value={discount.value} 
+                <input
+                  type="number"
+                  value={discount.value}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setDiscount({...discount, value: val === '' ? '' : parseFloat(val)})
+                    setDiscount({ ...discount, value: val === '' ? '' : parseFloat(val) })
                   }}
                   disabled={isLocked || loading}
                   className="w-full px-3 py-1.5 text-sm focus:outline-none font-mono text-text-main bg-transparent disabled:opacity-50"
@@ -176,9 +178,9 @@ const BillSummary = ({
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono">Tax %</label>
-              <input 
-                type="number" 
-                value={taxRate} 
+              <input
+                type="number"
+                value={taxRate}
                 onChange={(e) => {
                   const val = e.target.value;
                   setTaxRate(val === '' ? '' : parseFloat(val))
@@ -227,26 +229,42 @@ const BillSummary = ({
           </div>
 
           {/* Action Buttons */}
-          <div className={`grid gap-3 mt-4 mb-4 ${billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+          <div className={`grid gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? 'grid-cols-2 lg:grid-cols-5' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')}`}>
             {orderStatus === 'Open' && (
               <>
+                <button 
+                  onClick={onPrintKOT}
+                  disabled={cart.length === 0 || loading}
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Printer size={18} strokeWidth={2.5} />
+                  KOT
+                </button>
+                <button 
+                  onClick={onCancelOrder}
+                  disabled={cart.length === 0 || loading}
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Trash2 size={18} strokeWidth={2.5} />
+                  CANCEL
+                </button>
                 {billType !== 'Delivery' && (
                   <button 
                     onClick={onSaveOrder}
-                    disabled={loading}
-                    className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-primary border-2 border-primary/20 hover:bg-primary/5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading || cart.length === 0}
+                    className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-primary bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save size={18} />
-                    {loading ? 'SAVING...' : 'SAVE'}
+                    <Save size={18} strokeWidth={2.5} />
+                    {loading ? '...' : 'SAVE'}
                   </button>
                 )}
                 <button 
                   onClick={onGenerateBill}
                   disabled={cart.length === 0 || loading}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-md shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <FileText size={18} />
-                  {loading ? 'PROCESSING...' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
+                  <FileText size={18} strokeWidth={2.5} />
+                  {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
                 </button>
               </>
             )}
@@ -254,33 +272,57 @@ const BillSummary = ({
             {orderStatus === 'Billed' && (
               <>
                 <button 
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-text-main border-2 border-border hover:bg-surface transition-all disabled:opacity-50"
+                  onClick={onReopenOrder}
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50"
                   disabled={loading}
                 >
-                  <Printer size={18} />
+                  <Save size={18} strokeWidth={2.5} />
+                  EDIT
+                </button>
+                <button 
+                  onClick={onCancelOrder}
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                  disabled={loading}
+                >
+                  <Trash2 size={18} strokeWidth={2.5} />
+                  CANCEL
+                </button>
+                <button 
+                  onClick={onPrintKOT}
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50"
+                  disabled={loading}
+                >
+                  <Printer size={18} strokeWidth={2.5} />
+                  KOT
+                </button>
+                <button 
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50"
+                  disabled={loading}
+                >
+                  <Printer size={18} strokeWidth={2.5} />
                   PRINT
                 </button>
                 <button 
                   onClick={onSettleBill}
                   disabled={loading}
-                  className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white bg-success hover:bg-success-hover shadow-lg shadow-success/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-md shadow-success/20 transition-all disabled:opacity-50"
                 >
-                  <CheckCircle size={18} />
-                  {loading ? 'SETTLING...' : 'SETTLE'}
+                  <CheckCircle size={18} strokeWidth={2.5} />
+                  {loading ? 'WAIT' : 'SETTLE'}
                 </button>
               </>
             )}
 
-            {orderStatus === 'Paid' && (
-              <div className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20">
-                <CheckCircle size={18} />
-                BILL SETTLED
-              </div>
-            )}
+        {orderStatus === 'Paid' && (
+          <div className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20">
+            <CheckCircle size={18} />
+            BILL SETTLED
           </div>
-        </div>
+        )}
       </div>
     </div>
+      </div >
+    </div >
   );
 };
 

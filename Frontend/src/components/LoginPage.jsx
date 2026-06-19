@@ -48,7 +48,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                 <Sparkles className="absolute -top-2 -right-2 text-yellow-300 animate-pulse" size={20} />
               </div>
               <h1 className="text-5xl font-bold mb-4 tracking-tight drop-shadow-2xl text-white">
-                RestoPOS
+                msbillings
               </h1>
               <p className="text-xl font-semibold mb-2 text-white drop-shadow-2xl bg-black/30 backdrop-blur-md px-5 py-2.5 rounded-xl inline-block border border-white/10">
                 Premium Restaurant Management
@@ -122,7 +122,7 @@ const LoginPage = ({ onLoginSuccess }) => {
               <Sparkles className="absolute -top-1 -right-1 text-yellow-400 animate-pulse" size={16} />
             </div>
             <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
-              RestoPOS
+              msbillings
             </h1>
             <p className="text-white/70 text-lg">
               Premium Restaurant Management

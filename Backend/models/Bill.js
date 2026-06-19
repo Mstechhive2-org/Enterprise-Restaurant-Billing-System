@@ -14,6 +14,10 @@ const billSchema = new mongoose.Schema({
     name: String,
     price: Number,
     quantity: Number,
+    printedQuantity: {
+      type: Number,
+      default: 0
+    },
     total: Number
   }],
   subtotal: {
@@ -34,7 +38,16 @@ const billSchema = new mongoose.Schema({
   },
   paymentMode: {
     type: String,
-    enum: ['Cash', 'UPI', 'Card']
+    enum: ['Cash', 'UPI', 'Card', 'Mixed']
+  },
+  splitPayments: {
+    cash: { type: Number, default: 0 },
+    upi: { type: Number, default: 0 },
+    card: { type: Number, default: 0 }
+  },
+  upiApp: {
+    type: String,
+    enum: ['PhonePe', 'GPay', 'Paytm', 'Amazon Pay', 'BharatPe', 'Other']
   },
   status: {
     type: String,
@@ -70,7 +83,18 @@ const billSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  kitchenNotes: String
+  kitchenNotes: String,
+  kots: [{
+    kotNumber: String,
+    items: [{
+      name: String,
+      quantity: Number
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 });

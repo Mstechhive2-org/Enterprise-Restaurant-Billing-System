@@ -52,3 +52,46 @@
 ::-webkit-scrollbar-thumb {
   @apply bg-border/50 rounded-full hover:bg-primary/50 transition-colors;
 }
+
+/* Print Styles for 80mm Thermal Printers */
+@media print {
+  @page {
+    size: 80mm auto; /* Forces dynamic height cropping based on content */
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  html, body {
+    width: 80mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white;
+    visibility: hidden; /* Hide everything by default */
+  }
+
+  .invoice-container {
+    visibility: visible; /* Show only the invoice */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    background: white !important;
+  }
+
+  .receipt-print {
+    visibility: visible;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 5mm !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Force hidden elements to stay hidden */
+  .print\:hidden {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}

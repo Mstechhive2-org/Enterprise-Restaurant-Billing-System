@@ -7,27 +7,37 @@ const MenuManagement = React.lazy(() => import('./components/MenuManagement'));
 const ActiveOrders = React.lazy(() => import('./components/ActiveOrders'));
 const Analytics = React.lazy(() => import('./components/Analytics'));
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const FloorManagement = React.lazy(() => import('./components/FloorManagement'));
 const Settings = React.lazy(() => import('./components/Settings'));
+const Expenses = React.lazy(() => import('./components/Expenses'));
 const DeliveryOrders = React.lazy(() => import('./components/DeliveryOrders'));
+const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
+const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck, Wallet, Printer } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
 
 function App() {
-  const [view, setView] = useState('dashboard'); // Default to dashboard view
+  const [view, setView] = useState('floor'); // Default to floor view
   const [selectedTable, setSelectedTable] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [sectionLoading, setSectionLoading] = useState(false);
-  const [restaurantName, setRestaurantName] = useState('RestoPOS');
+  const [restaurantName, setRestaurantName] = useState('msbillings');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [hasLicense, setHasLicense] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
+    }
+    const savedLicense = localStorage.getItem('resto_license');
+    if (savedLicense) {
+      setHasLicense(true);
     }
     setLoading(false);
   }, []);
@@ -41,8 +51,8 @@ function App() {
         setRestaurantName(settings.restaurantName);
         document.title = `${settings.restaurantName} - Restaurant Management`;
       } else {
-        setRestaurantName('RestoPOS');
-        document.title = 'RestoPOS - Restaurant Management';
+        setRestaurantName('msbillings');
+        document.title = 'msbillings - Restaurant Management';
       }
     };
 
@@ -98,10 +108,11 @@ function App() {
     }
   };
 
-  const handleViewChange = (newView) => {
-    // setSectionLoading(true); // Removed manual loading state, relying on Suspense
+  const handleViewChange = (newView, tableSelection = null) => {
+    if (tableSelection) {
+      setSelectedTable(tableSelection);
+    }
     setView(newView);
-    // Removed artificial delay
   };
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-background text-text-muted">Loading...</div>;
@@ -114,16 +125,26 @@ function App() {
     );
   }
 
+  if (!hasLicense) {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Verifying License...</div>}>
+        <LicenseScreen onValidLicense={() => setHasLicense(true)} />
+      </Suspense>
+    );
+  }
+
   const getTitle = () => {
     switch (view) {
       case 'dashboard': return 'Dashboard';
+      case 'floor': return 'Floor Management';
       case 'billing': return 'New Order';
       case 'history': return 'Transaction History';
       case 'menu': return 'Menu Management';
       case 'analytics': return 'Analytics';
       case 'delivery': return 'Delivery Orders';
+      case 'expenses': return 'Petty Cash & Expenses';
       case 'settings': return 'Settings';
-      default: return 'RestoPOS';
+      default: return 'msbillings';
     }
   };
 
@@ -144,13 +165,25 @@ function App() {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
+          {/* 1. Floor Management */}
           <button
-            onClick={() => handleViewChange('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'dashboard' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            onClick={() => handleViewChange('floor')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'floor' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
             <Home size={20} />
-            <span>Dashboard</span>
+            <span>Floor Management</span>
           </button>
+          
+          {/* 2. New Orders */}
+          <button
+            onClick={() => handleViewChange('billing')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'billing' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <LayoutDashboard size={20} />
+            <span>New Order</span>
+          </button>
+
+          {/* 3. Active Orders */}
           <button
             onClick={() => handleViewChange('orders')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium relative ${view === 'orders' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -163,20 +196,8 @@ function App() {
               </span>
             )}
           </button>
-          <button
-            onClick={() => handleViewChange('delivery')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'delivery' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <Truck size={20} />
-            <span>Delivery Orders</span>
-          </button>
-          <button
-            onClick={() => handleViewChange('billing')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'billing' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <LayoutDashboard size={20} />
-            <span>New Order</span>
-          </button>
+
+          {/* 4. Bill History */}
           <button
             onClick={() => handleViewChange('history')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'history' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -184,6 +205,44 @@ function App() {
             <History size={20} />
             <span>Bill History</span>
           </button>
+
+          {/* 4.5 KOT History */}
+          <button
+            onClick={() => handleViewChange('kothistory')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'kothistory' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <Printer size={20} />
+            <span>KOT History</span>
+          </button>
+
+          {/* 5. Petty Cash & Expenses */}
+          <button
+            onClick={() => handleViewChange('expenses')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'expenses' ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <Wallet size={20} />
+            <span>Petty Cash & Expenses</span>
+          </button>
+
+          {/* 6. Delivery Orders */}
+          <button
+            onClick={() => handleViewChange('delivery')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'delivery' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <Truck size={20} />
+            <span>Delivery Orders</span>
+          </button>
+
+          {/* 6. Dashboard */}
+          <button
+            onClick={() => handleViewChange('dashboard')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'dashboard' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <Home size={20} />
+            <span>Dashboard</span>
+          </button>
+
+          {/* 7. Analytics */}
           <button
             onClick={() => handleViewChange('analytics')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'analytics' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -192,6 +251,7 @@ function App() {
             <span>Analytics</span>
           </button>
 
+          {/* 8. Menu */}
           <button
             onClick={() => handleViewChange('menu')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'menu' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -199,6 +259,8 @@ function App() {
             <UtensilsCrossed size={20} />
             <span>Menu</span>
           </button>
+
+          {/* 9. Settings */}
           <button
             onClick={() => handleViewChange('settings')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -231,16 +293,51 @@ function App() {
               <p className="text-sm text-text-muted">Welcome back, {user.username}</p>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 px-2 py-1.5 bg-surface rounded-full shadow-sm pr-4">
+            <div className="flex items-center gap-4 relative">
+              <button 
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-3 px-2 py-1.5 bg-surface rounded-full shadow-sm pr-4 hover:bg-surface-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+              >
                 <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-md">
                   <User size={20} />
                 </div>
-                <div className="flex flex-col leading-none">
+                <div className="flex flex-col leading-none text-left">
                   <span className="text-sm font-bold text-text-main">{user.username}</span>
                   <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">{user.role}</span>
                 </div>
-              </div>
+              </button>
+              
+              {/* Profile Dropdown */}
+              {profileOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setProfileOpen(false)}
+                  ></div>
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-surface rounded-xl shadow-xl border border-border overflow-hidden z-50 py-1">
+                    <button 
+                      onClick={() => {
+                        handleViewChange('settings');
+                        setProfileOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-text-main hover:bg-surface-hover flex items-center gap-2"
+                    >
+                      <SettingsIcon size={16} className="text-text-muted" />
+                      Settings
+                    </button>
+                    <button 
+                      onClick={() => {
+                        handleLogout();
+                        setProfileOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm font-medium text-danger hover:bg-danger/5 flex items-center gap-2 border-t border-border mt-1"
+                    >
+                      <LogOut size={16} />
+                      Logout
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </header>
         )}
@@ -255,6 +352,7 @@ function App() {
             </div>
           }>
             {view === 'dashboard' && <Dashboard onNavigate={handleViewChange} />}
+            {view === 'floor' && <FloorManagement onNavigate={handleViewChange} />}
             {view === 'orders' && (
               <ActiveOrders
                 onSelectOrder={(tableNo) => {
@@ -264,12 +362,14 @@ function App() {
                 onOrderUpdate={fetchActiveOrdersCount}
               />
             )}
-            {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} />}
+            {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} onNavigate={handleViewChange} />}
             {view === 'history' && <BillHistory />}
+            {view === 'kothistory' && <KOTHistory />}
             {view === 'analytics' && <Analytics />}
             {view === 'menu' && <MenuManagement user={user} />}
             {view === 'delivery' && <DeliveryOrders />}
-            {view === 'settings' && <Settings />}
+            {view === 'expenses' && <Expenses />}
+            {view === 'settings' && <Settings user={user} setUser={setUser} />}
           </Suspense>
         </main>
       </div>

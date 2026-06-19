@@ -12,9 +12,10 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:5174',
-  'https://restaurant-billing-frontend.vercel.app',
   'http://localhost:5175',
-  // Allow from environment variable (comma-separated)
+  // Add frontend URL from environment variable
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  // Allow from CORS_ORIGIN environment variable (comma-separated)
   ...(process.env.CORS_ORIGIN && process.env.CORS_ORIGIN !== '*'
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
     : [])
@@ -55,7 +56,7 @@ app.use(helmet());
 
 // 2. Limit requests from same API (Rate Limiting)
 const limiter = rateLimit({
-  max: 100, // Limit each IP to 100 requests per hour
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Higher limit for development
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour!'
 });
@@ -190,6 +191,7 @@ import billRoutes from './routes/billRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js';
 import startSessionCleanupJob from './utils/sessionCleanup.js';
 
 app.use('/api/menu', menuRoutes);
@@ -197,6 +199,7 @@ app.use('/api/bills', billRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/expenses', expenseRoutes);
 
 // Start background session cleanup job
 startSessionCleanupJob();

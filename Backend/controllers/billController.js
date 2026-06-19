@@ -53,8 +53,17 @@ export const saveOrder = async (req, res) => {
     const subtotal = sanitizedItems.reduce((sum, item) => sum + item.total, 0);
 
     if (order) {
+      // Preserve printedQuantity for existing items
+      const updatedItems = sanitizedItems.map(newItem => {
+        const existingItem = order.items.find(i => i.name === newItem.name);
+        if (existingItem && existingItem.printedQuantity !== undefined) {
+          return { ...newItem, printedQuantity: existingItem.printedQuantity };
+        }
+        return newItem;
+      });
+
       // Update existing order
-      order.items = sanitizedItems;
+      order.items = updatedItems;
       order.customerName = customerName;
       order.customerPhone = customerPhone;
       order.kitchenNotes = kitchenNotes;
@@ -119,8 +128,20 @@ export const generateBill = async (req, res) => {
     if (!order) return res.status(404).json({ message: 'Order not found' });
     if (order.status !== 'Open') return res.status(400).json({ message: 'Order already billed or paid' });
 
-    // Generate Bill Number using timestamp for uniqueness
-    const billNumber = `BILL-${Date.now()}`;
+    // Generate Sequential Bill Number (e.g. MS0001, MS0002)
+    let nextNum = 1;
+    const latestBill = await Bill.findOne({ billNumber: /^MS\d+$/ })
+      .sort({ billNumber: -1 })
+      .collation({ locale: 'en_US', numericOrdering: true });
+
+    if (latestBill && latestBill.billNumber) {
+      const currentNum = parseInt(latestBill.billNumber.replace('MS', ''), 10);
+      if (!isNaN(currentNum)) {
+        nextNum = currentNum + 1;
+      }
+    }
+    
+    const billNumber = `MS${nextNum.toString().padStart(4, '0')}`;
 
     order.status = 'Billed';
     order.billNumber = billNumber;
@@ -148,7 +169,7 @@ export const generateBill = async (req, res) => {
 export const settleBill = async (req, res) => {
   try {
     const { id } = req.params;
-    const { paymentMode } = req.body;
+    const { paymentMode, splitPayments, upiApp } = req.body;
 
     const order = await Bill.findById(id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
@@ -156,6 +177,17 @@ export const settleBill = async (req, res) => {
     // Set status to 'Paid' - this makes it appear in billing history
     order.status = 'Paid';
     order.paymentMode = paymentMode;
+    if (paymentMode === 'UPI' && upiApp) {
+      order.upiApp = upiApp;
+    }
+
+    if (paymentMode === 'Mixed' && splitPayments) {
+      order.splitPayments = {
+        cash: Number(splitPayments.cash) || 0,
+        upi: Number(splitPayments.upi) || 0,
+        card: Number(splitPayments.card) || 0
+      };
+    }
     
     // Explicitly update the updatedAt timestamp to ensure latest bills show first
     order.updatedAt = new Date();
@@ -337,6 +369,8 @@ export const getDailyStats = async (req, res) => {
     let paymentStats = [];
     let activeOrders = 0;
     let deliveryStats = 0;
+    let topItems = [];
+    let recentBills = [];
 
     try {
       // Get paid bills stats
@@ -402,13 +436,57 @@ export const getDailyStats = async (req, res) => {
     }
 
     try {
-      // Get active orders count
-      activeOrders = await Bill.countDocuments({
-        status: { $in: ['Open', 'Billed'] }
-      });
+      topItems = await Bill.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: today, $lt: tomorrow },
+            status: 'Paid'
+          }
+        },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.name",
+            quantity: { $sum: "$items.quantity" },
+            revenue: { $sum: "$items.total" }
+          }
+        },
+        { $sort: { quantity: -1 } },
+        { $limit: 10 }
+      ]);
     } catch (error) {
-      console.error('Error counting active orders:', error);
+      console.error('Error in topItems aggregation:', error);
+      topItems = [];
+    }
+
+    try {
+      recentBills = await Bill.find({
+        createdAt: { $gte: today, $lt: tomorrow },
+        status: 'Paid'
+      })
+      .select('billNumber tableNo billType paymentMode total orderSource items status createdAt updatedAt')
+      .sort({ updatedAt: -1, createdAt: -1 })
+      .limit(6)
+      .lean();
+    } catch (error) {
+      console.error('Error fetching recent bills:', error);
+      recentBills = [];
+    }
+
+    let openKOTs = [];
+    try {
+      openKOTs = await Bill.find({
+        status: { $in: ['Open', 'Billed'] }
+      })
+      .select('tableNo billType items status updatedAt createdAt')
+      .sort({ updatedAt: -1 })
+      .lean();
+
+      activeOrders = openKOTs.length;
+    } catch (error) {
+      console.error('Error fetching open KOTs:', error);
       activeOrders = 0;
+      openKOTs = [];
     }
 
     try {
@@ -476,7 +554,10 @@ export const getDailyStats = async (req, res) => {
       activeOrders: Number(activeOrders) || 0,
       deliveryOrders: Number(deliveryStats) || 0,
       dineInOrders: Number(dineInStats) || 0,
-      takeawayOrders: Number(takeawayStats) || 0
+      takeawayOrders: Number(takeawayStats) || 0,
+      topItems: topItems || [],
+      recentBills: recentBills || [],
+      openKOTs: openKOTs || []
     };
     
     // Cache the result for 30 seconds
@@ -498,7 +579,10 @@ export const getDailyStats = async (req, res) => {
       totalTax: 0,
       paymentMethods: [],
       activeOrders: 0,
-      deliveryOrders: 0
+      deliveryOrders: 0,
+      topItems: [],
+      recentBills: [],
+      openKOTs: []
     };
     
     // Log the error but return 200 with default data so dashboard doesn't break
@@ -507,3 +591,200 @@ export const getDailyStats = async (req, res) => {
   }
 };
 
+// Generate KOT for a bill (only for new/changed items)
+export const generateKOT = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { items: currentCart } = req.body; // Frontend sends the current cart to be safe
+
+    const bill = await Bill.findById(id);
+    if (!bill) {
+      return res.status(404).json({ message: 'Bill not found' });
+    }
+
+    // Calculate delta and update printed quantities
+    const kotItems = [];
+
+    // We trust the backend's `items` array which was just saved by saveOrder
+    // Wait, the frontend should just call saveOrder, then call generateKOT.
+    // generateKOT will look at bill.items, compare quantity with printedQuantity
+    
+    for (const item of bill.items) {
+      const newQty = item.quantity - (item.printedQuantity || 0);
+      if (newQty !== 0) {
+        kotItems.push({
+          name: item.name,
+          quantity: newQty // Can be negative for cancellations
+        });
+        // Update printed quantity
+        item.printedQuantity = item.quantity;
+      }
+    }
+
+    if (kotItems.length === 0) {
+      return res.status(400).json({ message: 'No new items to print KOT for.' });
+    }
+
+    // Generate KOT number (e.g., "KOT-1" relative to this bill)
+    const kotNumber = `KOT-${(bill.kots ? bill.kots.length : 0) + 1}`;
+    
+    const newKOT = {
+      kotNumber,
+      items: kotItems,
+      createdAt: new Date()
+    };
+
+    bill.kots.push(newKOT);
+    await bill.save();
+
+    res.status(200).json({
+      message: 'KOT generated successfully',
+      kot: newKOT,
+      bill: bill
+    });
+  } catch (error) {
+    console.error('Error generating KOT:', error);
+    res.status(500).json({ message: 'Error generating KOT', error: error.message });
+  }
+};
+
+// Get all KOTs generated today (or specific date) across all bills
+export const getTodayKOTs = async (req, res) => {
+  try {
+    const { date, search } = req.query;
+
+    let targetDate = new Date();
+    if (date) {
+      targetDate = new Date(date);
+    }
+    
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // Find all bills from target date that have KOTs
+    const bills = await Bill.find({
+      updatedAt: { $gte: targetDate, $lt: nextDay },
+      'kots.0': { $exists: true }
+    })
+    .select('tableNo billType kots status')
+    .sort({ updatedAt: -1 })
+    .lean();
+
+    // Flatten KOTs into a single array
+    let allKOTs = [];
+    bills.forEach(bill => {
+      if (bill.kots) {
+        bill.kots.forEach(kot => {
+          allKOTs.push({
+            ...kot,
+            billId: bill._id,
+            tableNo: bill.tableNo,
+            billType: bill.billType,
+            billStatus: bill.status
+          });
+        });
+      }
+    });
+
+    // Apply search filter if provided
+    if (search) {
+      const searchLower = search.toLowerCase();
+      allKOTs = allKOTs.filter(kot => 
+        (kot.kotNumber && kot.kotNumber.toLowerCase().includes(searchLower)) ||
+        (kot.tableNo && kot.tableNo.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Sort by KOT creation time descending
+    allKOTs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.status(200).json(allKOTs);
+  } catch (error) {
+    console.error('Error fetching today KOTs:', error);
+    res.status(500).json({ message: 'Error fetching KOTs', error: error.message });
+  }
+};
+
+// Reopen a Billed order back to Open state
+export const reopenOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bill = await Bill.findById(id);
+    if (!bill) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (bill.status === 'Paid') {
+      return res.status(400).json({ message: 'Cannot reopen a paid order. Create a new bill instead.' });
+    }
+
+    bill.status = 'Open';
+    // Clear the bill number so it's regenerated when they finalize? 
+    // No, standard POS practice is to keep the same bill number and just update the amount.
+    
+    await bill.save();
+
+    res.status(200).json({
+      message: 'Order reopened successfully',
+      bill
+    });
+  } catch (error) {
+    console.error('Error reopening order:', error);
+    res.status(500).json({ message: 'Error reopening order', error: error.message });
+  }
+};
+
+// Cancel an entire order
+export const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const bill = await Bill.findById(id);
+    if (!bill) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    if (bill.status === 'Paid') {
+      return res.status(400).json({ message: 'Cannot cancel an order that is already paid. Please process a refund instead.' });
+    }
+
+    if (bill.status === 'Cancelled') {
+      return res.status(400).json({ message: 'Order is already cancelled' });
+    }
+
+    // Generate a cancellation KOT if any items were already printed to the kitchen
+    const kotItems = [];
+    for (const item of bill.items) {
+      if (item.printedQuantity > 0) {
+        kotItems.push({
+          name: item.name,
+          quantity: -(item.printedQuantity) // Negative quantity signals kitchen to stop cooking
+        });
+        item.printedQuantity = 0; // Reset printed quantity
+      }
+    }
+
+    let newKOT = null;
+    if (kotItems.length > 0) {
+      newKOT = {
+        kotNumber: `CANCEL-${(bill.kots ? bill.kots.length : 0) + 1}`,
+        items: kotItems,
+        createdAt: new Date()
+      };
+      bill.kots.push(newKOT);
+    }
+
+    bill.status = 'Cancelled';
+    await bill.save();
+
+    res.status(200).json({
+      message: 'Order cancelled successfully',
+      kot: newKOT
+    });
+  } catch (error) {
+    console.error('Error cancelling order:', error);
+    res.status(500).json({ message: 'Error cancelling order', error: error.message });
+  }
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { getDailyStats } from '../api/billing';
+import { getDailyStats, getBillById, deleteBill } from '../api/billing';
 import { 
   TrendingUp, 
   Receipt, 
@@ -17,7 +17,8 @@ import {
   Truck
 } from 'lucide-react';
 import Toast from './Toast';
-import { LayoutDashboard } from 'lucide-react';
+import Invoice from './Invoice';
+import { LayoutDashboard, Plus, Coffee, Home, Trash2, Eye, Star } from 'lucide-react';
 
 const Dashboard = ({ onNavigate }) => {
   const [stats, setStats] = useState({
@@ -31,8 +32,13 @@ const Dashboard = ({ onNavigate }) => {
     activeOrders: 0,
     deliveryOrders: 0,
     dineInOrders: 0,
-    takeawayOrders: 0
+    takeawayOrders: 0,
+    topItems: [],
+    recentBills: []
   });
+  const [selectedBill, setSelectedBill] = useState(null);
+  const [loadingBill, setLoadingBill] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, billId: null });
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -40,6 +46,10 @@ const Dashboard = ({ onNavigate }) => {
     const today = new Date().toDateString();
     return localStorage.getItem('dashboardLastDate') || today;
   });
+
+
+
+
 
   // Fetch today's stats - Optimized with error handling
   const fetchTodayStats = useCallback(async () => {
@@ -65,7 +75,9 @@ const Dashboard = ({ onNavigate }) => {
           activeOrders: 0,
           deliveryOrders: 0,
           dineInOrders: 0,
-          takeawayOrders: 0
+          takeawayOrders: 0,
+          topItems: [],
+          recentBills: []
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -97,7 +109,9 @@ const Dashboard = ({ onNavigate }) => {
           activeOrders: 0,
           deliveryOrders: 0,
           dineInOrders: 0,
-          takeawayOrders: 0
+          takeawayOrders: 0,
+          topItems: [],
+          recentBills: []
         });
         localStorage.setItem('dashboardLastDate', today);
         setLastResetDate(today);
@@ -167,6 +181,37 @@ const Dashboard = ({ onNavigate }) => {
       month: 'long', 
       day: 'numeric' 
     });
+  };
+
+  const handleDeleteClick = (id) => {
+    setDeleteModal({ isOpen: true, billId: id });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteModal.billId) return;
+    
+    try {
+      await deleteBill(deleteModal.billId);
+      setToast({ message: 'Bill deleted successfully', type: 'success' });
+      setDeleteModal({ isOpen: false, billId: null });
+      fetchTodayStats(); // Refresh dashboard
+    } catch (error) {
+      console.error('Error deleting bill:', error);
+      setToast({ message: error.response?.data?.message || 'Failed to delete bill', type: 'error' });
+    }
+  };
+
+  const handleViewBill = async (billId) => {
+    setLoadingBill(true);
+    try {
+      const fullBill = await getBillById(billId);
+      setSelectedBill(fullBill);
+    } catch (error) {
+      console.error('Error fetching bill details:', error);
+      setToast({ message: 'Failed to load bill details', type: 'error' });
+    } finally {
+      setLoadingBill(false);
+    }
   };
 
   const getPaymentIcon = (mode) => {
@@ -378,6 +423,154 @@ const Dashboard = ({ onNavigate }) => {
           </div>
         )}
 
+        {/* Top Items, Recent Bills & Pending KOTs Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          
+          {/* Top Selling Items */}
+          <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[400px]">
+            <div className="p-5 border-b border-border bg-gradient-to-r from-primary/5 to-transparent">
+              <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+                <Star size={20} className="text-yellow-500" />
+                Top Selling Items
+              </h3>
+            </div>
+            <div className="p-2 flex-1 overflow-y-auto">
+              {!stats.topItems || stats.topItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-text-muted">
+                  <Package size={40} className="mb-2 opacity-20" />
+                  <p>No items sold today</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {stats.topItems.map((item, idx) => (
+                    <div key={item._id} className="flex items-center justify-between p-3 hover:bg-surface-hover rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs">
+                          #{idx + 1}
+                        </div>
+                        <div>
+                          <p className="font-bold text-text-main">{item._id}</p>
+                          <p className="text-xs text-text-muted">{item.quantity} portions sold</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-black text-primary">{formatCurrency(item.revenue)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Recent Bills */}
+          <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[400px]">
+            <div className="p-5 border-b border-border bg-gradient-to-r from-accent/5 to-transparent">
+              <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+                <Receipt size={20} className="text-accent" />
+                Recent Bills
+              </h3>
+            </div>
+            <div className="p-0 flex-1 overflow-y-auto">
+              {!stats.recentBills || stats.recentBills.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-text-muted p-5">
+                  <Receipt size={40} className="mb-2 opacity-20" />
+                  <p>No bills generated today</p>
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead className="bg-background sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-xs font-bold text-text-muted uppercase">Bill #</th>
+                      <th className="px-4 py-3 text-xs font-bold text-text-muted uppercase">Time</th>
+                      <th className="px-4 py-3 text-xs font-bold text-text-muted uppercase text-right">Total</th>
+                      <th className="px-4 py-3 text-xs font-bold text-text-muted uppercase text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {stats.recentBills.map(bill => (
+                      <tr key={bill._id} className="hover:bg-surface-hover transition-colors">
+                        <td className="px-4 py-3 font-medium text-text-main text-sm">#{bill.billNumber}</td>
+                        <td className="px-4 py-3 text-text-muted text-sm">{new Date(bill.updatedAt || bill.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                        <td className="px-4 py-3 font-bold text-text-main text-right text-sm">₹{bill.total.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex justify-center gap-1">
+                            <button 
+                              onClick={() => handleViewBill(bill._id)}
+                              disabled={loadingBill}
+                              className="p-1.5 hover:bg-background rounded-lg text-primary transition-colors disabled:opacity-50"
+                              title="View Invoice"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          
+          {/* Pending KOTs (Revenue Leakage Tracker) */}
+          <div className="bg-surface rounded-xl border border-border shadow-sm flex flex-col h-[400px]">
+            <div className="p-5 border-b border-border bg-gradient-to-r from-orange-500/5 to-transparent">
+              <div className="flex justify-between items-start">
+                <h3 className="text-lg font-bold text-text-main flex items-center gap-2">
+                  <Clock size={20} className="text-orange-500" />
+                  Pending KOTs (Unsettled)
+                </h3>
+                <span className="px-2.5 py-1 bg-orange-100 text-orange-700 text-xs font-bold rounded-full">
+                  {stats.openKOTs ? stats.openKOTs.length : 0} Open
+                </span>
+              </div>
+              <p className="text-xs text-text-muted mt-1">Orders sent to kitchen but not yet paid.</p>
+            </div>
+            <div className="p-0 flex-1 overflow-y-auto">
+              {!stats.openKOTs || stats.openKOTs.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-text-muted p-5">
+                  <Clock size={40} className="mb-2 opacity-20" />
+                  <p>No pending KOTs</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {stats.openKOTs.map(kot => {
+                    const waitTimeMinutes = Math.floor((new Date() - new Date(kot.createdAt)) / 60000);
+                    const isOverdue = waitTimeMinutes > 60; // Flag if open for more than 1 hour
+                    const kotDate = new Date(kot.createdAt);
+                    const formattedDate = kotDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                    const formattedTime = kotDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    return (
+                      <div key={kot._id} className={`p-4 hover:bg-surface-hover transition-colors ${isOverdue ? 'bg-red-50/30' : ''}`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-bold text-text-main">{kot.tableNo}</span>
+                          <div className="text-right flex flex-col items-end gap-1">
+                            <span className="text-xs font-bold text-text-muted">
+                              {formattedDate} at {formattedTime}
+                            </span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isOverdue ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'}`}>
+                              {waitTimeMinutes > 1440 ? `${Math.floor(waitTimeMinutes/1440)} days ago` : `${waitTimeMinutes} mins ago`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-text-muted mb-2">
+                          <span className="font-medium text-text-main">Type:</span> {kot.billType} • <span className="font-medium text-text-main">Status:</span> {kot.status}
+                        </div>
+                        <div className="text-xs text-text-muted line-clamp-2">
+                          {kot.items && kot.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
         {/* Info Section */}
         <div className="bg-surface rounded-xl p-5 border border-border">
           <div className="flex items-start gap-3">
@@ -406,6 +599,13 @@ const Dashboard = ({ onNavigate }) => {
           </button>
         </div>
       </div>
+
+      {selectedBill && (
+        <Invoice 
+          bill={selectedBill} 
+          onClose={() => setSelectedBill(null)} 
+        />
+      )}
 
       {toast && (
         <Toast
