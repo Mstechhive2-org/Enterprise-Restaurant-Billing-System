@@ -125,7 +125,8 @@ function App() {
     );
   }
 
-  if (!hasLicense) {
+  const isDesktop = !!window.electronAPI;
+  if (isDesktop && !hasLicense) {
     return (
       <Suspense fallback={<div className="flex items-center justify-center h-screen">Verifying License...</div>}>
         <LicenseScreen onValidLicense={() => setHasLicense(true)} />
