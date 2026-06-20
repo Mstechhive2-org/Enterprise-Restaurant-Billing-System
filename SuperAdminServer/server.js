@@ -17,15 +17,6 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'SuperAdmin Server Online', version: '1.0.0' });
 });
 
-// Import and use routes (to be created)
-import clientRoutes from './routes/clientRoutes.js';
-import razorpayRoutes from './routes/razorpayRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js';
-
-app.use('/api/clients', clientRoutes);
-app.use('/api/razorpay', razorpayRoutes);
-app.use('/api/payment', paymentRoutes);
-
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
@@ -38,18 +29,26 @@ const connectDB = async () => {
   }
 };
 
-const PORT = process.env.PORT || 4000;
-
 if (process.env.NODE_ENV !== 'production') {
   connectDB().then(() => {
+    const PORT = process.env.PORT || 4000;
     app.listen(PORT, () => console.log(`SuperAdmin Server running on port ${PORT}`));
   });
 } else {
-  // Connect to DB for serverless environment
+  // Connect to DB for serverless environment BEFORE hitting routes
   app.use(async (req, res, next) => {
     await connectDB();
     next();
   });
 }
+
+// Import and use routes
+import clientRoutes from './routes/clientRoutes.js';
+import razorpayRoutes from './routes/razorpayRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+
+app.use('/api/clients', clientRoutes);
+app.use('/api/razorpay', razorpayRoutes);
+app.use('/api/payment', paymentRoutes);
 
 export default app;
