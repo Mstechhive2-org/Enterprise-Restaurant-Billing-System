@@ -11,18 +11,28 @@ const Settings = ({ user, setUser }) => {
     phone: '9876543210',
     email: 'support@abcrestaurant.com',
     gstin: '36ABCDE1234F1Z5',
-    footerMessage: '*** THANK YOU! VISIT AGAIN ***'
+    footerMessage: '*** THANK YOU! VISIT AGAIN ***',
+    kotPrinter: '',
+    billingPrinter: ''
   });
 
   const [username, setUsername] = useState(user ? user.username : '');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [systemPrinters, setSystemPrinters] = useState([]);
 
   useEffect(() => {
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('restaurantSettings');
     if (savedSettings) {
-      setSettings(JSON.parse(savedSettings));
+      setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
+    }
+
+    // Load available printers if running in Desktop App
+    if (window.electronAPI && window.electronAPI.getPrinters) {
+      window.electronAPI.getPrinters().then(printers => {
+        setSystemPrinters(printers || []);
+      }).catch(err => console.error("Failed to load printers:", err));
     }
   }, []);
 
@@ -110,6 +120,66 @@ const Settings = ({ user, setUser }) => {
                   className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main"
                   placeholder="Enter username"
                 />
+              </div>
+            </div>
+
+            {/* Desktop Printers */}
+            <div className="bg-surface rounded-2xl p-4 border border-border shadow-lg">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                    <FileText className="text-primary" size={20} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-text-main">Desktop Printers</h2>
+                    <p className="text-xs text-text-muted mt-0.5">Configure auto-printing</p>
+                  </div>
+                </div>
+                {!window.electronAPI && (
+                  <span className="text-[10px] font-bold px-2 py-1 bg-amber-100 text-amber-700 rounded-md">
+                    WEB APP MODE
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                    Default KOT Printer
+                  </label>
+                  <select
+                    value={settings.kotPrinter}
+                    onChange={(e) => handleInputChange('kotPrinter', e.target.value)}
+                    disabled={!window.electronAPI}
+                    className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main disabled:opacity-50"
+                  >
+                    <option value="">-- Select Printer --</option>
+                    {systemPrinters.map(p => (
+                      <option key={p.name} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                    Default Billing Printer
+                  </label>
+                  <select
+                    value={settings.billingPrinter}
+                    onChange={(e) => handleInputChange('billingPrinter', e.target.value)}
+                    disabled={!window.electronAPI}
+                    className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main disabled:opacity-50"
+                  >
+                    <option value="">-- Select Printer --</option>
+                    {systemPrinters.map(p => (
+                      <option key={p.name} value={p.name}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {!window.electronAPI && (
+                  <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
+                    Silent printing is only available in the Desktop App. In the web version, a print dialog will always appear.
+                  </p>
+                )}
               </div>
             </div>
 

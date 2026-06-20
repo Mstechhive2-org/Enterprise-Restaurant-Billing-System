@@ -34,6 +34,7 @@ const BillSummary = ({
   onGenerateBill,
   onSettleBill,
   onPrintKOT,
+  onPrintBill,
   onReopenOrder,
   onCancelOrder,
 
@@ -296,6 +297,7 @@ const BillSummary = ({
                   KOT
                 </button>
                 <button 
+                  onClick={onPrintBill}
                   className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50"
                   disabled={loading}
                 >

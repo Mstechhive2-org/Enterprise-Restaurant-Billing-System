@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { getMenuItems, addMenuItem, updateMenuItem, deleteMenuItem } from '../api/menu';
+import { getMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, deleteAllMenuItems } from '../api/menu';
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../api/category';
-import { Plus, Edit2, Trash2, X, Search, FolderPlus, Folder, FolderOpen, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import Papa from 'papaparse';
+import { Plus, Edit2, Trash2, X, Search, FolderPlus, Folder, FolderOpen, ChevronLeft, ChevronRight, Eye, Download, Upload } from 'lucide-react';
 import ConfirmationModal from './ConfirmationModal';
 import Toast from './Toast';
 
@@ -30,6 +31,7 @@ const MenuManagement = ({ user }) => {
     price: '',
     type: 'veg',
     description: '',
+    image: '',
     taxRate: 0,
     isAvailable: true
   });
@@ -76,6 +78,7 @@ const MenuManagement = ({ user }) => {
         price: item.price,
         type: item.type || 'veg',
         description: item.description || '',
+        image: item.image || '',
         taxRate: item.taxRate || 0,
         isAvailable: item.isAvailable !== false
       });
@@ -87,6 +90,7 @@ const MenuManagement = ({ user }) => {
         price: '',
         type: 'veg',
         description: '',
+        image: '',
         taxRate: 0,
         isAvailable: true
       });
@@ -203,16 +207,105 @@ const MenuManagement = ({ user }) => {
     }
   };
 
+  const fileInputRef = React.useRef(null);
+
+  const handleExportCSV = () => {
+    const csvData = items.map(item => ({
+      Name: item.name,
+      Category: item.category?.name || item.category,
+      Price: item.price,
+      Type: item.type === 'veg' ? 'Veg' : 'Non-Veg',
+      Description: item.description || '',
+      'Is Available': item.isAvailable ? 'Yes' : 'No',
+      'Tax Rate': item.taxRate || 0,
+      'Image URL': item.image || ''
+    }));
+
+    const csv = Papa.unparse(csvData);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'menu_export.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    setLoading(true);
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (results) => {
+        try {
+          const rows = results.data;
+          let successCount = 0;
+          let errorCount = 0;
+          
+          for (const row of rows) {
+            try {
+              if (!row.Name || !row.Price || !row.Category) continue;
+
+              const itemData = {
+                name: row.Name.trim(),
+                price: parseFloat(row.Price) || 0,
+                category: row.Category.trim(),
+                type: (row.Type && row.Type.toLowerCase().includes('non')) ? 'non-veg' : 'veg',
+                description: row.Description || '',
+                isAvailable: row['Is Available'] ? row['Is Available'].toLowerCase() === 'yes' : true,
+                taxRate: parseFloat(row['Tax Rate']) || 0,
+                image: row['Image URL'] || ''
+              };
+
+              await addMenuItem(itemData);
+              successCount++;
+            } catch (err) {
+              console.error("Failed to import row:", row, err);
+              errorCount++;
+            }
+          }
+          setToast({ message: `Imported ${successCount} items successfully. ${errorCount ? `${errorCount} failed.` : ''}`, type: 'success' });
+          fetchItems();
+          fetchCategories();
+        } catch (error) {
+          setToast({ message: 'Error processing CSV file', type: 'error' });
+        } finally {
+          setLoading(false);
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      },
+      error: (error) => {
+        setToast({ message: 'Failed to parse CSV file', type: 'error' });
+        setLoading(false);
+      }
+    });
+  };
+
   const handleDeleteClick = (id) => {
     setDeleteModal({ isOpen: true, itemId: id });
   };
 
   const confirmDelete = async () => {
-    if (deleteModal.itemId) {
+    if (deleteModal.deleteAll) {
+      try {
+        await deleteAllMenuItems();
+        fetchItems();
+        setDeleteModal({ isOpen: false, itemId: null, categoryId: null, deleteAll: false });
+        setToast({ message: 'All items deleted successfully', type: 'success' });
+      } catch (error) {
+        console.error('Error deleting all items:', error);
+        setToast({ message: 'Failed to delete all items', type: 'error' });
+      }
+    } else if (deleteModal.itemId) {
       try {
         await deleteMenuItem(deleteModal.itemId);
         fetchItems();
-        setDeleteModal({ isOpen: false, itemId: null, categoryId: null });
+        setDeleteModal({ isOpen: false, itemId: null, categoryId: null, deleteAll: false });
         setToast({ message: 'Item deleted successfully', type: 'success' });
       } catch (error) {
         console.error('Error deleting item:', error);
@@ -326,6 +419,41 @@ const MenuManagement = ({ user }) => {
           <p className="text-text-muted">Manage your restaurant's menu items and categories</p>
         </div>
         <div className="flex gap-3">
+          <input
+            type="file"
+            accept=".csv"
+            ref={fileInputRef}
+            onChange={handleImportCSV}
+            className="hidden"
+          />
+          {user?.role === 'Admin' && activeTab === 'items' && (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 bg-surface text-text-muted px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors border border-border"
+                title="Import CSV"
+              >
+                <Upload size={20} />
+                <span className="hidden sm:inline">Import</span>
+              </button>
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 bg-surface text-text-muted px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors border border-border"
+                title="Export CSV"
+              >
+                <Download size={20} />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+              <button
+                onClick={() => setDeleteModal({ isOpen: true, itemId: null, categoryId: null, deleteAll: true })}
+                className="flex items-center gap-2 bg-danger/10 text-danger px-4 py-2 rounded-lg hover:bg-danger/20 transition-colors border border-danger/20"
+                title="Delete All Items"
+              >
+                <Trash2 size={20} />
+                <span className="hidden sm:inline">Delete All</span>
+              </button>
+            </>
+          )}
           <button
             onClick={() => setActiveTab('categories')}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === 'categories' ? 'bg-primary text-white' : 'bg-surface text-text-muted hover:bg-surface-hover'}`}
@@ -663,6 +791,17 @@ const MenuManagement = ({ user }) => {
               </div>
 
               <div className="space-y-1">
+                <label className="text-sm font-medium text-text-muted">Image URL (Optional)</label>
+                <input
+                  type="text"
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+
+              <div className="space-y-1">
                 <label className="text-sm font-medium text-text-muted">Description</label>
                 <textarea
                   value={formData.description}
@@ -761,10 +900,10 @@ const MenuManagement = ({ user }) => {
 
       <ConfirmationModal
         isOpen={deleteModal.isOpen}
-        onClose={() => setDeleteModal({ isOpen: false, itemId: null, categoryId: null })}
+        onClose={() => setDeleteModal({ isOpen: false, itemId: null, categoryId: null, deleteAll: false })}
         onConfirm={confirmDelete}
-        title={deleteModal.itemId ? "Delete Item" : "Delete Category"}
-        message={`Are you sure you want to delete this ${deleteModal.itemId ? 'menu item' : 'category'}? This action cannot be undone.`}
+        title={deleteModal.deleteAll ? "Delete All Items" : deleteModal.itemId ? "Delete Item" : "Delete Category"}
+        message={deleteModal.deleteAll ? "Are you sure you want to delete ALL menu items? This action cannot be undone and will empty your entire menu." : `Are you sure you want to delete this ${deleteModal.itemId ? 'menu item' : 'category'}? This action cannot be undone.`}
         confirmText="Delete"
         isDanger={true}
       />

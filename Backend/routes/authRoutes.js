@@ -7,7 +7,9 @@ import { authenticateToken, requireAdmin, optionalAuthenticateToken } from '../m
 // Public routes
 router.post('/login', login);
 router.post('/refresh', refreshToken);
-router.post('/clear-sessions', (req, res) => {
+
+// Protected routes
+router.post('/clear-sessions', authenticateToken, requireAdmin, (req, res) => {
   sessionManager.clearAllSessions();
   res.json({ message: 'All sessions cleared' });
 });

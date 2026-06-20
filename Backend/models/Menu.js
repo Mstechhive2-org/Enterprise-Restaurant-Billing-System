@@ -9,7 +9,7 @@ const menuSchema = new mongoose.Schema({
   price: {
     type: Number,
     required: true,
-    min: 0
+    min: [0, 'Price cannot be negative']
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
@@ -24,6 +24,11 @@ const menuSchema = new mongoose.Schema({
   description: {
     type: String,
     trim: true
+  },
+  image: {
+    type: String,
+    trim: true,
+    default: ''
   },
   isAvailable: {
     type: Boolean,

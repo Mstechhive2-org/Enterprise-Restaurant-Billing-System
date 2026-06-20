@@ -25,7 +25,7 @@ const LicenseScreen = ({ onValidLicense }) => {
         localStorage.setItem('resto_hwid', hardwareId);
       }
 
-      const response = await fetch('http://localhost:4000/api/clients/validate', {
+      const response = await fetch('https://mstechhive.com/api/clients/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ licenseKey: licenseKey.trim(), hardwareId })
@@ -35,6 +35,31 @@ const LicenseScreen = ({ onValidLicense }) => {
 
       if (response.ok && data.valid) {
         // License is valid!
+        // Setup local database configuration
+        if (data.databaseName && data.plainTextPassword) {
+          try {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+            const setupResponse = await fetch(`${API_BASE_URL}/config/setup`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                databaseName: data.databaseName,
+                username: data.restaurantName,
+                password: data.plainTextPassword
+              })
+            });
+            
+            if (!setupResponse.ok) {
+              throw new Error('Database setup failed on backend');
+            }
+          } catch (setupErr) {
+            console.error('Failed to configure local database:', setupErr);
+            setError('Failed to setup local database. Please try again or contact support.');
+            setLoading(false);
+            return; // STOP! Don't save license key!
+          }
+        }
+
         localStorage.setItem('resto_license', licenseKey.trim());
         localStorage.setItem('resto_license_expiry', data.validUntil);
         onValidLicense();

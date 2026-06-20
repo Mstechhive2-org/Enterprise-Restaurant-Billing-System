@@ -35,3 +35,9 @@ export const deleteMenuItem = async (id) => {
   menuCache = null; // Clear cache
   return response.data;
 };
+
+export const deleteAllMenuItems = async () => {
+  const response = await api.delete('/menu/all');
+  menuCache = null;
+  return response.data;
+};

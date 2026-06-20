@@ -5,10 +5,61 @@ import crypto from 'crypto';
 // Get all clients (For Super Admin dashboard)
 export const getAllClients = async (req, res) => {
   try {
-    const clients = await Client.find().sort({ createdAt: -1 });
-    res.status(200).json(clients);
+    const clients = await Client.find().lean().sort({ createdAt: -1 });
+    
+    // Attach license info to each client
+    const clientsWithLicense = await Promise.all(clients.map(async (client) => {
+      const license = await License.findOne({ client: client._id });
+      return { ...client, validUntil: license ? license.validUntil : null };
+    }));
+
+    res.status(200).json(clientsWithLicense);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching clients', error: error.message });
+  }
+};
+
+// Update client license and expiry
+export const updateLicense = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { licenseKey, validUntil, resetHardware } = req.body;
+
+    const client = await Client.findById(id);
+    if (!client) return res.status(404).json({ message: 'Client not found' });
+
+    // Update Client License Key
+    if (licenseKey) {
+      client.licenseKey = licenseKey;
+    }
+    
+    // Reset hardware ID if requested (allows them to install on a new computer)
+    if (resetHardware) {
+      client.hardwareId = null;
+    }
+    
+    await client.save();
+
+    // Update License Document
+    const license = await License.findOne({ client: id });
+    if (license) {
+      if (licenseKey) license.key = licenseKey;
+      if (validUntil) license.validUntil = new Date(validUntil);
+      await license.save();
+    } else if (licenseKey && validUntil) {
+       // If somehow missing, create it
+       const newLicense = new License({
+         key: licenseKey,
+         client: id,
+         plan: 'Custom',
+         validUntil: new Date(validUntil)
+       });
+       await newLicense.save();
+    }
+
+    res.status(200).json({ message: 'License updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating license', error: error.message });
   }
 };
 
@@ -119,11 +170,20 @@ export const validateLicense = async (req, res) => {
       return res.status(403).json({ valid: false, message: 'License is already bound to another computer. Contact support.' });
     }
 
+    // Generate Database Name if missing (for Multi-Tenancy)
+    if (!client.databaseName) {
+      const sanitizedName = client.restaurantName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      client.databaseName = `client_${sanitizedName}_${client._id.toString().substring(0, 6)}`;
+      await client.save();
+    }
+
     res.status(200).json({
       valid: true,
       message: 'License Verified',
       restaurantName: client.restaurantName,
-      validUntil: license.validUntil
+      validUntil: license.validUntil,
+      databaseName: client.databaseName,
+      plainTextPassword: client.plainTextPassword
     });
 
   } catch (error) {

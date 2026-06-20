@@ -1,6 +1,7 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const { autoUpdater } = require('electron-updater');
 
 let mainWindow;
 let backendProcess;
@@ -10,8 +11,9 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     },
     title: "RestoPOS",
     show: false // Wait until ready to show
@@ -31,25 +33,136 @@ function createWindow() {
 }
 
 function startBackend() {
-  const backendPath = path.join(__dirname, 'backend');
+  const { fork } = require('child_process');
   
-  // Start the backend Node server using the bundled folder
-  backendProcess = spawn('npm', ['start'], {
+  // Check if app is packaged
+  const isPackaged = app.isPackaged;
+
+  // Path to backend
+  // In development, it's ./backend
+  // In production, it's extracted to process.resourcesPath/backend because we use extraResources
+  const backendPath = isPackaged
+      ? path.join(process.resourcesPath, 'backend')
+      : path.join(__dirname, 'backend');
+
+  let serverPath = path.join(backendPath, 'server.js');
+  
+  // When packaged by electron-builder, files unpacked from ASAR are stored in app.asar.unpacked
+  if (serverPath.includes('app.asar')) {
+    serverPath = serverPath.replace('app.asar', 'app.asar.unpacked');
+    backendPath = backendPath.replace('app.asar', 'app.asar.unpacked');
+  }
+  
+  // Start the backend Node server using Electron's bundled Node process
+  backendProcess = fork(serverPath, [], {
     cwd: backendPath,
-    shell: true,
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: '1',
+      APP_USER_DATA_PATH: app.getPath('userData')
+    },
     stdio: 'inherit'
   });
 
   backendProcess.on('error', (err) => {
     console.error('Failed to start backend server.', err);
-    dialog.showErrorBox('Backend Error', 'Failed to start the local database server.');
+    dialog.showErrorBox('Backend Error', `Failed to start the local database server.\\nPath: ${serverPath}\\nError: ${err.message}\\n\\nPlease make sure you have an active internet connection for the database.`);
+  });
+}
+
+ipcMain.handle('get-printers', async (event) => {
+  if (mainWindow) {
+    return await mainWindow.webContents.getPrintersAsync();
+  }
+  return [];
+});
+
+const fs = require('fs');
+
+ipcMain.on('silent-print', (event, { htmlContent, printerName }) => {
+  let printWindow = new BrowserWindow({ show: false });
+  
+  // Find the compiled CSS file
+  let cssContent = '';
+  try {
+    const assetsPath = path.join(__dirname, 'frontend/assets');
+    if (fs.existsSync(assetsPath)) {
+      const files = fs.readdirSync(assetsPath);
+      const cssFile = files.find(f => f.endsWith('.css'));
+      if (cssFile) {
+        cssContent = fs.readFileSync(path.join(assetsPath, cssFile), 'utf8');
+      }
+    }
+  } catch (err) {
+    console.error('Could not load CSS for printing:', err);
+  }
+
+  const fullHtml = `
+    <html>
+      <head>
+        <style>${cssContent}</style>
+        <style>
+          @media print {
+            .print\\:hidden { display: none !important; }
+            .print\\:p-0 { padding: 0 !important; }
+            .print\\:m-0 { margin: 0 !important; }
+            .print\\:shadow-none { box-shadow: none !important; }
+            .print\\:border-0 { border: 0 !important; }
+            .print\\:max-w-none { max-width: none !important; }
+          }
+        </style>
+      </head>
+      <body>
+        ${htmlContent}
+      </body>
+    </html>
+  `;
+
+  printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
+  
+  printWindow.webContents.on('did-finish-load', () => {
+    printWindow.webContents.print({
+      silent: true,
+      deviceName: printerName
+    }, (success, failureReason) => {
+      if (!success) console.log('Print failed:', failureReason);
+      printWindow.close();
+    });
+  });
+});
+
+function setupAutoUpdater() {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('update-available', () => {
+    console.log('Update available.');
+  });
+
+  autoUpdater.on('update-downloaded', () => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Ready',
+      message: 'A new version of MS Billing has been downloaded. The application will now restart to apply the updates.',
+      buttons: ['Restart Now']
+    }).then(() => {
+      autoUpdater.quitAndInstall(false, true);
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    console.error('Auto updater error:', err);
   });
 }
 
 app.on('ready', () => {
   startBackend();
   // Wait a little bit for the backend to initialize
-  setTimeout(createWindow, 2000);
+  setTimeout(() => {
+    createWindow();
+    setupAutoUpdater();
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 2000);
 });
 
 app.on('window-all-closed', () => {

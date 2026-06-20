@@ -16,9 +16,11 @@ export const addMenuItem = async (req, res) => {
 
     // If category is a string, find the category by name
     if (typeof categoryData === 'string') {
-      const category = await Category.findOne({ name: categoryData });
+      let category = await Category.findOne({ name: categoryData });
       if (!category) {
-        return res.status(400).json({ message: 'Category not found' });
+        // Auto-create category if it doesn't exist
+        category = new Category({ name: categoryData, description: '' });
+        await category.save();
       }
       categoryData = category._id;
     }
@@ -38,9 +40,11 @@ export const updateMenuItem = async (req, res) => {
 
     // If category is a string, find the category by name
     if (typeof updateData.category === 'string') {
-      const category = await Category.findOne({ name: updateData.category });
+      let category = await Category.findOne({ name: updateData.category });
       if (!category) {
-        return res.status(400).json({ message: 'Category not found' });
+        // Auto-create category if it doesn't exist
+        category = new Category({ name: updateData.category, description: '' });
+        await category.save();
       }
       updateData.category = category._id;
     }
@@ -62,6 +66,15 @@ export const deleteMenuItem = async (req, res) => {
       return res.status(404).json({ message: 'Menu item not found' });
     }
     res.status(200).json({ message: 'Item deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteAllMenuItems = async (req, res) => {
+  try {
+    await Menu.deleteMany({});
+    res.status(200).json({ message: 'All menu items deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

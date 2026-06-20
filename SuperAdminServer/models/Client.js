@@ -20,6 +20,11 @@ const clientSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  databaseName: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   licenseKey: {
     type: String,
     default: null

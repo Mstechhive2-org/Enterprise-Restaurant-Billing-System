@@ -62,7 +62,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   const [orderStatus, setOrderStatus] = useState('Open'); // Open, Billed, Paid
   const [billNumber, setBillNumber] = useState(null);
   
-  const [billType, setBillType] = useState('Dine-In');
+  const [billType, setBillType] = useState(initialTable && initialTable.startsWith('DEL-') ? 'Delivery' : 'Dine-In');
   const [taxRate, setTaxRate] = useState(''); 
   const [discount, setDiscount] = useState({ type: 'percentage', value: '' });
   
@@ -632,6 +632,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
               onGenerateBill={handleGenerateBill}
               onSettleBill={() => setShowPayment(true)}
               onPrintKOT={handlePrintKOT}
+              onPrintBill={() => setShowInvoice(true)}
               onReopenOrder={handleReopenOrder}
               onCancelOrder={handleCancelOrder}
 
@@ -661,9 +662,22 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
 
       {showInvoice && (
         <Invoice 
-          bill={completedBill} 
+          bill={completedBill || {
+            _id: orderId,
+            billNumber: billNumber,
+            status: orderStatus,
+            items: cart,
+            subtotal: subtotal,
+            tax: taxAmount,
+            discount: discountAmount,
+            total: total,
+            billType: billType,
+            tableNo: activeTable,
+            orderSource: orderSource,
+            createdAt: new Date()
+          }} 
           onClose={handleFinish} 
-          onSave={handleFinish} // Re-using onSave prop for "Finish" action
+          onSave={handleFinish} 
         />
       )}
 

@@ -20,11 +20,16 @@ const Invoice = ({ bill, onClose, onSave }) => {
     }
   }, []);
   const handlePrint = () => {
-    window.print();
+    if (window.electronAPI && settings.billingPrinter) {
+      const htmlContent = document.getElementById('invoice-print-area').outerHTML;
+      window.electronAPI.silentPrint(htmlContent, settings.billingPrinter);
+    } else {
+      window.print();
+    }
   };
 
   return (
-    <div className="invoice-container fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col z-50 overflow-hidden animate-in fade-in duration-200 items-center justify-center p-4 print:p-0.5">
+    <div id="invoice-print-area" className="invoice-container fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col z-50 overflow-hidden animate-in fade-in duration-200 items-center justify-center p-4 print:p-0.5">
       {/* Controls - Hidden on Print */}
       <div className="absolute top-4 right-4 flex gap-3 print:hidden">
         {onSave && (

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Shield, Key, Users, RefreshCw, AlertTriangle, Search, Activity, Power } from 'lucide-react';
+import { Shield, Key, Users, RefreshCw, AlertTriangle, Search, Activity, Power, Edit3 } from 'lucide-react';
 
 function App() {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Modal State
+  const [licenseModal, setLicenseModal] = useState({ isOpen: false, clientId: null, licenseKey: '', validUntil: '', resetHardware: false });
+  const [createClientModal, setCreateClientModal] = useState({ isOpen: false, restaurantName: '', ownerName: '', email: '', password: '', plan: 'Yearly' });
 
   const fetchClients = async () => {
     setLoading(true);
@@ -33,6 +37,44 @@ function App() {
       alert('Password overridden successfully!');
     } catch (error) {
       alert('Failed to override password.');
+    }
+  };
+
+  const openLicenseModal = (client) => {
+    setLicenseModal({
+      isOpen: true,
+      clientId: client._id,
+      licenseKey: client.licenseKey || '',
+      validUntil: client.validUntil ? new Date(client.validUntil).toISOString().split('T')[0] : '',
+      resetHardware: false
+    });
+  };
+
+  const handleSaveLicense = async () => {
+    try {
+      await axios.put(`http://localhost:4000/api/clients/${licenseModal.clientId}/license`, {
+        licenseKey: licenseModal.licenseKey,
+        validUntil: licenseModal.validUntil,
+        resetHardware: licenseModal.resetHardware
+      });
+      alert('License updated successfully!');
+      setLicenseModal({ isOpen: false, clientId: null, licenseKey: '', validUntil: '', resetHardware: false });
+      fetchClients();
+    } catch (error) {
+      alert('Failed to update license.');
+      console.error(error);
+    }
+  };
+
+  const handleCreateClient = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('http://localhost:4000/api/clients', createClientModal);
+      alert('Client and License generated successfully!');
+      setCreateClientModal({ isOpen: false, restaurantName: '', ownerName: '', email: '', password: '', plan: 'Yearly' });
+      fetchClients();
+    } catch (error) {
+      alert(error.response?.data?.message || 'Failed to create client');
     }
   };
 
@@ -89,7 +131,7 @@ function App() {
           <div className="bg-surface rounded-2xl p-6 border border-border shadow-lg relative overflow-hidden group flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm font-bold uppercase tracking-wider mb-2">Generate New Key</p>
-              <button onClick={() => alert('WIP: Manual generation modal')} className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-6 rounded-xl transition-all shadow-lg shadow-primary/20">
+              <button onClick={() => setCreateClientModal({ ...createClientModal, isOpen: true })} className="bg-primary hover:bg-primary-hover text-white font-bold py-2 px-6 rounded-xl transition-all shadow-lg shadow-primary/20">
                 + New Client
               </button>
             </div>
@@ -121,7 +163,8 @@ function App() {
                 <th className="p-4 border-b border-border">Restaurant</th>
                 <th className="p-4 border-b border-border">Email</th>
                 <th className="p-4 border-b border-border">License Key</th>
-                <th className="p-4 border-b border-border bg-red-900/10 text-red-400">Plain Password (Secret)</th>
+                <th className="p-4 border-b border-border">Expires</th>
+                <th className="p-4 border-b border-border bg-red-900/10 text-red-400">Plain Password</th>
                 <th className="p-4 border-b border-border">HWID Binding</th>
                 <th className="p-4 border-b border-border text-center">Status</th>
                 <th className="p-4 border-b border-border text-right">Actions</th>
@@ -130,14 +173,14 @@ function App() {
             <tbody className="text-sm divide-y divide-border">
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-gray-500">
+                  <td colSpan="8" className="p-8 text-center text-gray-500">
                     <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
                     Loading database...
                   </td>
                 </tr>
               ) : filteredClients.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-gray-500">No clients found matching your search.</td>
+                  <td colSpan="8" className="p-8 text-center text-gray-500">No clients found matching your search.</td>
                 </tr>
               ) : (
                 filteredClients.map(client => (
@@ -148,6 +191,9 @@ function App() {
                       <span className="font-mono bg-background px-2 py-1 rounded text-primary text-xs font-bold border border-primary/20">
                         {client.licenseKey}
                       </span>
+                    </td>
+                    <td className="p-4 font-mono text-gray-300 text-xs">
+                      {client.validUntil ? new Date(client.validUntil).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center gap-2">
@@ -176,12 +222,20 @@ function App() {
                       </span>
                     </td>
                     <td className="p-4 text-right">
-                      <button 
-                        onClick={() => handleOverridePassword(client._id, client.restaurantName)}
-                        className="text-xs font-bold bg-surface border border-border hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition-colors"
-                      >
-                        Force Reset Pwd
-                      </button>
+                      <div className="flex gap-2 justify-end">
+                        <button 
+                          onClick={() => openLicenseModal(client)}
+                          className="flex items-center gap-1 text-xs font-bold bg-primary hover:bg-primary-hover text-white px-3 py-1.5 rounded transition-colors"
+                        >
+                          <Edit3 className="w-3 h-3" /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleOverridePassword(client._id, client.restaurantName)}
+                          className="text-xs font-bold bg-surface border border-border hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition-colors"
+                        >
+                          Reset Pwd
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -190,6 +244,145 @@ function App() {
           </table>
         </div>
       </main>
+
+      {/* License Edit Modal */}
+      {licenseModal.isOpen && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-surface border border-border p-6 rounded-2xl shadow-2xl max-w-md w-full m-4">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Key className="text-primary w-5 h-5"/> Edit License</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">License Key</label>
+                <input 
+                  type="text" 
+                  value={licenseModal.licenseKey}
+                  onChange={(e) => setLicenseModal({...licenseModal, licenseKey: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-2 text-white font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Expiration Date</label>
+                <input 
+                  type="date" 
+                  value={licenseModal.validUntil}
+                  onChange={(e) => setLicenseModal({...licenseModal, validUntil: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-2 text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 bg-background p-3 rounded-lg border border-border">
+                <input 
+                  type="checkbox" 
+                  id="resetHardware"
+                  checked={licenseModal.resetHardware}
+                  onChange={(e) => setLicenseModal({...licenseModal, resetHardware: e.target.checked})}
+                  className="w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary"
+                />
+                <label htmlFor="resetHardware" className="text-sm font-medium">Clear Hardware Binding (Allows install on new PC)</label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button 
+                onClick={() => setLicenseModal({ isOpen: false, clientId: null, licenseKey: '', validUntil: '', resetHardware: false })}
+                className="px-4 py-2 bg-background border border-border rounded-lg hover:bg-gray-700 transition-colors text-sm font-bold"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveLicense}
+                className="px-4 py-2 bg-primary hover:bg-primary-hover rounded-lg transition-colors text-white text-sm font-bold shadow-lg shadow-primary/20"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Client Modal */}
+      {createClientModal.isOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-surface p-8 rounded-2xl w-full max-w-md border border-border shadow-2xl relative">
+            <h2 className="text-2xl font-black mb-6 flex items-center gap-3">
+              <Users className="text-primary" />
+              Create New Client
+            </h2>
+            <form onSubmit={handleCreateClient} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1">Restaurant Name (Used for DB)</label>
+                <input 
+                  type="text" 
+                  required
+                  value={createClientModal.restaurantName}
+                  onChange={e => setCreateClientModal({...createClientModal, restaurantName: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1">Owner Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={createClientModal.ownerName}
+                  onChange={e => setCreateClientModal({...createClientModal, ownerName: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1">Email</label>
+                <input 
+                  type="email" 
+                  required
+                  value={createClientModal.email}
+                  onChange={e => setCreateClientModal({...createClientModal, email: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1">Password</label>
+                <input 
+                  type="text" 
+                  required
+                  value={createClientModal.password}
+                  onChange={e => setCreateClientModal({...createClientModal, password: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-400 mb-1">License Plan</label>
+                <select 
+                  value={createClientModal.plan}
+                  onChange={e => setCreateClientModal({...createClientModal, plan: e.target.value})}
+                  className="w-full bg-background border border-border rounded-lg p-3 text-white focus:outline-none focus:border-primary"
+                >
+                  <option value="Monthly">Monthly (Demo - 30 Days)</option>
+                  <option value="Yearly">Yearly</option>
+                  <option value="Lifetime">Lifetime</option>
+                </select>
+              </div>
+              
+              <div className="flex gap-4 pt-4">
+                <button 
+                  type="button"
+                  onClick={() => setCreateClientModal({ isOpen: false, restaurantName: '', ownerName: '', email: '', password: '', plan: 'Yearly' })} 
+                  className="flex-1 bg-background hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-xl transition-all border border-border"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-3 px-4 rounded-xl transition-all shadow-lg shadow-primary/20"
+                >
+                  Generate & Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

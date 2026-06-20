@@ -12,38 +12,43 @@ const billSchema = new mongoose.Schema({
   },
   items: [{
     name: String,
-    price: Number,
-    quantity: Number,
+    price: { type: Number, min: [0, 'Price cannot be negative'] },
+    quantity: { type: Number, min: [0, 'Quantity cannot be negative'] },
     printedQuantity: {
       type: Number,
-      default: 0
+      default: 0,
+      min: [0, 'Printed quantity cannot be negative']
     },
-    total: Number
+    total: { type: Number, min: [0, 'Total cannot be negative'] }
   }],
   subtotal: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Subtotal cannot be negative']
   },
   tax: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Tax cannot be negative']
   },
   discount: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Discount cannot be negative']
   },
   total: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Total cannot be negative']
   },
   paymentMode: {
     type: String,
     enum: ['Cash', 'UPI', 'Card', 'Mixed']
   },
   splitPayments: {
-    cash: { type: Number, default: 0 },
-    upi: { type: Number, default: 0 },
-    card: { type: Number, default: 0 }
+    cash: { type: Number, default: 0, min: [0, 'Cash cannot be negative'] },
+    upi: { type: Number, default: 0, min: [0, 'UPI cannot be negative'] },
+    card: { type: Number, default: 0, min: [0, 'Card cannot be negative'] }
   },
   upiApp: {
     type: String,
@@ -77,11 +82,13 @@ const billSchema = new mongoose.Schema({
   platformOrderId: String, // For Swiggy/Zomato order IDs
   platformCommission: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Commission cannot be negative']
   },
   packagingCharges: {
     type: Number,
-    default: 0
+    default: 0,
+    min: [0, 'Packaging charges cannot be negative']
   },
   kitchenNotes: String,
   kots: [{

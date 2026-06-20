@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, UtensilsCrossed, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { LogIn, User, Lock, UtensilsCrossed, Eye, EyeOff, Sparkles, RefreshCw } from 'lucide-react';
 import { loginUser } from '../api/auth';
 
 const LoginPage = ({ onLoginSuccess }) => {
@@ -245,7 +245,29 @@ const LoginPage = ({ onLoginSuccess }) => {
               </form>
 
               {/* Footer */}
-              <div className="mt-8 text-center">
+              <div className="mt-8 flex flex-col items-center gap-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (window.confirm('Are you sure you want to reset your license? You will need to re-enter your license key.')) {
+                      try {
+                        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+                        await fetch(`${API_BASE_URL}/config/reset`, { method: 'POST' });
+                        localStorage.removeItem('resto_hwid'); // Clear hardware ID
+                        localStorage.removeItem('resto_license'); // Clear license key memory
+                        localStorage.removeItem('resto_license_expiry'); // Clear license expiry memory
+                        alert('License reset successfully. Please restart the application.');
+                        window.location.reload();
+                      } catch (err) {
+                        alert('Failed to reset license.');
+                      }
+                    }
+                  }}
+                  className="text-text-muted hover:text-red-500 text-sm font-medium transition-colors flex items-center gap-2 group"
+                >
+                  <RefreshCw size={14} className="group-hover:animate-spin" />
+                  Reset License & Switch Account
+                </button>
                 <p className="text-text-muted text-sm">
                   © 2025 MS Tech Hive . All rights reserved.
                 </p>

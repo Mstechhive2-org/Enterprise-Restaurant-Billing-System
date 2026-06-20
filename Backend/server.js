@@ -112,8 +112,33 @@ app.get('/', (req, res) => {
   });
 });
 
+import fs from 'fs';
+import path from 'path';
+
 // Database Connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/restaurant_billing';
+// SECURITY: Do not default to a production database. Use an isolated temp DB.
+let MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/unconfigured_client_db';
+
+// Read client-config.json if it exists to override the database name dynamically
+// If APP_USER_DATA_PATH is provided (via Electron), use it. Otherwise fallback to process.cwd()
+try {
+  const configDir = process.env.APP_USER_DATA_PATH || process.cwd();
+  const configPath = path.join(configDir, 'client-config.json');
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (config.databaseName) {
+      const parts = MONGO_URI.split('?');
+      const connectionPart = parts[0];
+      const queryPart = parts.length > 1 ? `?${parts[1]}` : '';
+      const lastSlashIndex = connectionPart.lastIndexOf('/');
+      const newConnectionPart = connectionPart.substring(0, lastSlashIndex) + '/' + config.databaseName;
+      MONGO_URI = newConnectionPart + queryPart;
+      console.log(`Using client-specific database: ${config.databaseName}`);
+    }
+  }
+} catch (error) {
+  console.error('Failed to parse client-config.json, using default database', error);
+}
 
 // Connection state
 let isConnected = false;
@@ -177,6 +202,7 @@ import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
+import configRoutes from './routes/configRoutes.js';
 import startSessionCleanupJob from './utils/sessionCleanup.js';
 
 app.use('/api/menu', menuRoutes);
@@ -185,6 +211,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/config', configRoutes);
 
 // Start background session cleanup job
 startSessionCleanupJob();
