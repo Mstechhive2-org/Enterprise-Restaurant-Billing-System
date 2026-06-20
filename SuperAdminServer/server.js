@@ -17,6 +17,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'SuperAdmin Server Online', version: '1.0.0' });
 });
 
+app.get('/api/debug', (req, res) => {
+  res.json({
+    hasMongoUri: !!process.env.MONGODB_URI,
+    nodeEnv: process.env.NODE_ENV,
+    uriStart: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 10) : null
+  });
+});
+
 let isConnected = false;
 const connectDB = async () => {
   if (isConnected) return;
