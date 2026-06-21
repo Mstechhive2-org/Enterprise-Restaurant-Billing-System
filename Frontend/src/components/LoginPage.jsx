@@ -256,6 +256,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                         localStorage.removeItem('resto_hwid'); // Clear hardware ID
                         localStorage.removeItem('resto_license'); // Clear license key memory
                         localStorage.removeItem('resto_license_expiry'); // Clear license expiry memory
+                        localStorage.removeItem('user'); // Clear user session
                         alert('License reset successfully. Please restart the application.');
                         window.location.reload();
                       } catch (err) {

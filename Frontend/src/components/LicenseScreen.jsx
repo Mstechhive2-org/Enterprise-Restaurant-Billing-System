@@ -25,7 +25,7 @@ const LicenseScreen = ({ onValidLicense }) => {
         localStorage.setItem('resto_hwid', hardwareId);
       }
 
-      const response = await fetch('https://mstechhive.com/api/clients/validate', {
+      const response = await fetch('https://msbilling-api.vercel.app/api/clients/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ licenseKey: licenseKey.trim(), hardwareId })

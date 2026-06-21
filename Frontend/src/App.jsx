@@ -13,8 +13,9 @@ const Expenses = React.lazy(() => import('./components/Expenses'));
 const DeliveryOrders = React.lazy(() => import('./components/DeliveryOrders'));
 const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
+const DayBook = React.lazy(() => import('./components/DayBook'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck, Wallet, Printer } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
@@ -117,15 +118,8 @@ function App() {
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-background text-text-muted">Loading...</div>;
 
-  if (!user) {
-    return (
-      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-        <LoginPage onLoginSuccess={handleLoginSuccess} />
-      </Suspense>
-    );
-  }
-
   const isDesktop = !!window.electronAPI;
+  
   if (isDesktop && !hasLicense) {
     return (
       <Suspense fallback={<div className="flex items-center justify-center h-screen">Verifying License...</div>}>
@@ -134,18 +128,29 @@ function App() {
     );
   }
 
+  if (!user) {
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+        <LoginPage onLoginSuccess={handleLoginSuccess} />
+      </Suspense>
+    );
+  }
+
   const getTitle = () => {
     switch (view) {
       case 'dashboard': return 'Dashboard';
       case 'floor': return 'Floor Management';
-      case 'billing': return 'New Order';
-      case 'history': return 'Transaction History';
-      case 'menu': return 'Menu Management';
+      case 'orders': return 'Active Orders';
+      case 'billing': return 'Billing / POS';
+      case 'history': return 'Bill History';
+      case 'kothistory': return 'KOT History';
       case 'analytics': return 'Analytics';
+      case 'daybook': return 'DayBook';
+      case 'menu': return 'Menu Management';
       case 'delivery': return 'Delivery Orders';
       case 'expenses': return 'Petty Cash & Expenses';
-      case 'settings': return 'Settings';
-      default: return 'msbillings';
+      case 'settings': return 'System Settings';
+      default: return 'Restaurant Management';
     }
   };
 
@@ -250,6 +255,15 @@ function App() {
           >
             <BarChart3 size={20} />
             <span>Analytics</span>
+          </button>
+
+          {/* 7.5 DayBook */}
+          <button
+            onClick={() => handleViewChange('daybook')}
+            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'daybook' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+          >
+            <BookOpen size={20} />
+            <span>DayBook</span>
           </button>
 
           {/* 8. Menu */}
@@ -367,6 +381,7 @@ function App() {
             {view === 'history' && <BillHistory />}
             {view === 'kothistory' && <KOTHistory />}
             {view === 'analytics' && <Analytics />}
+            {view === 'daybook' && <DayBook />}
             {view === 'menu' && <MenuManagement user={user} />}
             {view === 'delivery' && <DeliveryOrders />}
             {view === 'expenses' && <Expenses />}

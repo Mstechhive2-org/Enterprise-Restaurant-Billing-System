@@ -41,7 +41,7 @@ app.use(helmet());
 
 // 2. Limit requests from same API (Rate Limiting)
 const limiter = rateLimit({
-  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Higher limit for development
+  max: 10000, // Safe limit for busy restaurants
   windowMs: 60 * 60 * 1000,
   message: 'Too many requests from this IP, please try again in an hour!'
 });
