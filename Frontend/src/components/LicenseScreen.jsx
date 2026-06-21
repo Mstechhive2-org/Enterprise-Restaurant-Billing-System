@@ -25,7 +25,8 @@ const LicenseScreen = ({ onValidLicense }) => {
         localStorage.setItem('resto_hwid', hardwareId);
       }
 
-      const response = await fetch('https://msbilling-api.vercel.app/api/clients/validate', {
+      const SUPERADMIN_API_URL = import.meta.env.VITE_SUPERADMIN_API_URL || 'http://localhost:4000';
+      const response = await fetch(`${SUPERADMIN_API_URL}/api/clients/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ licenseKey: licenseKey.trim(), hardwareId })
