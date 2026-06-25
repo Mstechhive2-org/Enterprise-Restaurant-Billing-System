@@ -1,6 +1,6 @@
 {
   "name": "msbilling",
-  "version": "1.3.0",
+  "version": "1.4.1",
   "description": "Premium Restaurant Management System, Billing Software",
   "main": "main.js",
   "scripts": {
@@ -24,7 +24,7 @@
       {
         "from": "backend",
         "to": "backend",
-        "filter": ["**/*"]
+        "filter": ["**/*", ".env"]
       }
     ],
     "mac": {
@@ -34,6 +34,15 @@
     "win": {
       "target": "nsis",
       "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "shortcutName": "MS Billings"
     },
     "publish": [
       {
