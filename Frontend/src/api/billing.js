@@ -30,6 +30,11 @@ export const apiCancelOrder = async (id) => {
   return response.data;
 };
 
+export const apiTransferTable = async (id, newTableNo) => {
+  const response = await api.post(`/bills/transfer/${id}`, { newTableNo });
+  return response.data;
+};
+
 export const getOpenOrders = async () => {
   const response = await api.get('/bills/open');
   return response.data;

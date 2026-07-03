@@ -4,12 +4,13 @@ import BillSummary from './BillSummary';
 import PaymentModal from './PaymentModal';
 import KOT from './KOT';
 import Toast from './Toast';
-import { getActiveOrder, saveOrder, generateBill, settleBill, apiGenerateKOT, apiReopenOrder, apiCancelOrder } from '../api/billing';
-import { Search, UtensilsCrossed, Maximize, Minimize, TrendingUp, ShoppingBag, LayoutGrid } from 'lucide-react';
+import { getActiveOrder, saveOrder, generateBill, settleBill, apiGenerateKOT, apiReopenOrder, apiCancelOrder, apiTransferTable } from '../api/billing';
+import { Search, UtensilsCrossed, Maximize, Minimize, TrendingUp, ShoppingBag, LayoutGrid, ArrowRightLeft } from 'lucide-react';
 import useDebounce from '../hooks/useDebounce';
 import Invoice from './Invoice';
+import TransferTableModal from './TransferTableModal';
 
-const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
+const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admin' }) => {
   const [activeTable, setActiveTable] = useState(initialTable || '');
   const [floors, setFloors] = useState([]);
 
@@ -72,6 +73,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   const [showPayment, setShowPayment] = useState(false);
   const [showInvoice, setShowInvoice] = useState(false);
   const [showKOT, setShowKOT] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
   const [activeKOTData, setActiveKOTData] = useState(null);
   const [completedBill, setCompletedBill] = useState(null);
   const [toast, setToast] = useState(null);
@@ -88,13 +90,14 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  // Auto-generate delivery order number when Delivery is selected
+  // Auto-generate delivery/takeaway order number when Delivery or Takeaway is selected
   useEffect(() => {
-    if (billType === 'Delivery' && !activeTable) {
+    if ((billType === 'Delivery' || billType === 'Takeaway') && (!activeTable || !activeTable.startsWith(billType === 'Delivery' ? 'DEL-' : 'TAK-'))) {
       const timestamp = Date.now().toString().slice(-6);
-      const generatedOrderNo = `DEL-${timestamp}`;
+      const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+      const generatedOrderNo = `${prefix}${timestamp}`;
       setActiveTable(generatedOrderNo);
-    } else if (billType !== 'Delivery' && activeTable && activeTable.startsWith('DEL-')) {
+    } else if (billType === 'Dine-In' && activeTable && (activeTable.startsWith('DEL-') || activeTable.startsWith('TAK-'))) {
       setActiveTable('');
     }
   }, [billType]);
@@ -125,6 +128,18 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
         if (order.billType === 'Delivery') {
           setOrderSource(order.orderSource || 'Direct');
         }
+        if (order.tax !== undefined && Number(order.tax) > 0) {
+          setTaxRate(order.tax);
+        } else {
+          try {
+            const s = JSON.parse(localStorage.getItem('restaurantSettings') || '{}');
+            let tot = 0;
+            if (s.enableCgst !== false) tot += (s.cgstRate !== undefined ? Number(s.cgstRate) : 2.5);
+            if (s.enableSgst !== false) tot += (s.sgstRate !== undefined ? Number(s.sgstRate) : 2.5);
+            if (s.enableGst === true) tot += (s.gstRate !== undefined ? Number(s.gstRate) : 5);
+            if (tot > 0) setTaxRate(tot);
+          } catch (e) {}
+        }
       } else {
         // Reset for new order
         setCart([]);
@@ -133,6 +148,16 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
         setBillNumber(null);
         if (billType !== 'Delivery') {
           setOrderSource('Direct');
+        }
+        try {
+          const s = JSON.parse(localStorage.getItem('restaurantSettings') || '{}');
+          let tot = 0;
+          if (s.enableCgst !== false) tot += (s.cgstRate !== undefined ? Number(s.cgstRate) : 2.5);
+          if (s.enableSgst !== false) tot += (s.sgstRate !== undefined ? Number(s.sgstRate) : 2.5);
+          if (s.enableGst === true) tot += (s.gstRate !== undefined ? Number(s.gstRate) : 5);
+          setTaxRate(tot > 0 ? tot : '');
+        } catch (e) {
+          setTaxRate('');
         }
       }
     } catch (error) {
@@ -167,9 +192,17 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   };
 
   const addToCart = (item) => {
-    if (!activeTable) {
-      showToast('Please select a table first', 'error');
-      return;
+    let currentTable = activeTable;
+    if (!currentTable) {
+      if (billType === 'Takeaway' || billType === 'Delivery') {
+        const timestamp = Date.now().toString().slice(-6);
+        const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+        currentTable = `${prefix}${timestamp}`;
+        setActiveTable(currentTable);
+      } else {
+        showToast('Please select a table first', 'error');
+        return;
+      }
     }
     if (orderStatus !== 'Open') {
       showToast('Order is locked. Cannot add items.', 'error');
@@ -187,9 +220,17 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   };
 
   const updateQuantity = (id, delta) => {
-    if (!activeTable) {
-      showToast('Please select a table first', 'error');
-      return;
+    let currentTable = activeTable;
+    if (!currentTable) {
+      if (billType === 'Takeaway' || billType === 'Delivery') {
+        const timestamp = Date.now().toString().slice(-6);
+        const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+        currentTable = `${prefix}${timestamp}`;
+        setActiveTable(currentTable);
+      } else {
+        showToast('Please select a table first', 'error');
+        return;
+      }
     }
     if (orderStatus !== 'Open') {
       showToast('Order is locked. Cannot modify items.', 'error');
@@ -225,12 +266,11 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   // Action Handlers
   const handleSaveOrder = async () => {
     if (!activeTable) {
-      if (billType === 'Delivery') {
-        // Auto-generate delivery order number if not set
+      if (billType === 'Delivery' || billType === 'Takeaway') {
         const timestamp = Date.now().toString().slice(-6);
-        const generatedOrderNo = `DEL-${timestamp}`;
+        const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+        const generatedOrderNo = `${prefix}${timestamp}`;
         setActiveTable(generatedOrderNo);
-        // Wait a bit for state to update, then proceed
         setTimeout(() => handleSaveOrderWithTable(generatedOrderNo), 100);
         return;
       } else {
@@ -271,31 +311,29 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
   };
 
   const handleGenerateBill = async () => {
-    // For Delivery orders, auto-save if order doesn't exist
+    // For Delivery or Takeaway orders, auto-save if order doesn't exist
     if (!orderId) {
-      if (billType === 'Delivery') {
-        // Auto-generate delivery order number if not set
+      if (billType === 'Delivery' || billType === 'Takeaway') {
         let tableToUse = activeTable;
         if (!tableToUse) {
           const timestamp = Date.now().toString().slice(-6);
-          tableToUse = `DEL-${timestamp}`;
+          const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+          tableToUse = `${prefix}${timestamp}`;
           setActiveTable(tableToUse);
         }
-        // Save order first, then generate bill
         setLoading(true);
         try {
           const orderData = {
             tableNo: tableToUse,
             items: cart,
-            billType: 'Delivery',
-            orderSource
+            billType: billType,
+            orderSource: billType === 'Delivery' ? orderSource : undefined
           };
           const savedOrder = await saveOrder(orderData);
           setOrderId(savedOrder._id);
-          // Now generate bill with the saved order
           await generateBillAfterSave(savedOrder._id);
         } catch (error) {
-          console.error('Error saving delivery order:', error);
+          console.error('Error saving order:', error);
           const errorMessage = error.response?.data?.message || error.message;
           showToast(`Failed to save order: ${errorMessage}`, 'error');
           setLoading(false);
@@ -530,6 +568,23 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
     }
   };
 
+  const handleTransferTable = async (newTableNo) => {
+    if (!orderId) return;
+    try {
+      setLoading(true);
+      await apiTransferTable(orderId, newTableNo);
+      showToast(`Bill successfully transferred to ${newTableNo}`, 'success');
+      setShowTransfer(false);
+      setActiveTable(newTableNo); // This will automatically re-fetch the order for the new table
+      if (onOrderUpdate) onOrderUpdate();
+    } catch (error) {
+      console.error('Error transferring table:', error);
+      showToast(error.response?.data?.message || 'Failed to transfer table', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Custom Header for Billing Page */}
@@ -544,9 +599,9 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
         {/* Table Selector */}
         <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-1.5">
           <LayoutGrid size={16} className="text-text-muted" />
-          {billType === 'Delivery' ? (
+          {(billType === 'Delivery' || billType === 'Takeaway') ? (
             <div className="font-bold text-text-main text-sm">
-              {activeTable || 'DEL-XXXXXX'}
+              {activeTable || (billType === 'Delivery' ? 'DEL-XXXXXX' : 'TAK-XXXXXX')}
             </div>
           ) : (
             <select 
@@ -573,6 +628,17 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
                 </option>
               ))}
             </select>
+          )}
+          
+          {/* Transfer Table Button */}
+          {activeTable && orderStatus === 'Open' && orderId && billType !== 'Delivery' && (
+            <button
+              onClick={() => setShowTransfer(true)}
+              title="Transfer Bill to Another Table"
+              className="ml-2 p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-lg transition-colors border border-primary/20 flex items-center justify-center"
+            >
+              <ArrowRightLeft size={16} />
+            </button>
           )}
         </div>
 
@@ -624,6 +690,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
               taxAmount={taxAmount}
               discountAmount={discountAmount}
               total={total}
+              userRole={userRole}
 
               // Lifecycle Props
               orderStatus={orderStatus}
@@ -688,6 +755,15 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate }) => {
             setShowKOT(false);
             setActiveKOTData(null);
           }}
+        />
+      )}
+
+      {showTransfer && (
+        <TransferTableModal
+          floors={floors}
+          currentTable={activeTable}
+          onClose={() => setShowTransfer(false)}
+          onTransfer={handleTransferTable}
         />
       )}
 

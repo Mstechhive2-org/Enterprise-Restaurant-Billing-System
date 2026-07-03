@@ -79,9 +79,16 @@ ipcMain.handle('get-printers', async (event) => {
 
 const fs = require('fs');
 
-ipcMain.on('silent-print', (event, { htmlContent, printerName }) => {
-  let printWindow = new BrowserWindow({ show: false });
+ipcMain.on('silent-print', (event, { htmlContent, printerName, silent = true }) => {
+  let printWindow = new BrowserWindow({ 
+    show: !silent, // Must be visible for OS print dialog to work correctly on Windows
+    width: 400,
+    height: 800
+  });
   
+  if (!silent) {
+    printWindow.setMenuBarVisibility(false);
+  }
   // Find the compiled CSS file
   let cssContent = '';
   try {
@@ -102,7 +109,15 @@ ipcMain.on('silent-print', (event, { htmlContent, printerName }) => {
       <head>
         <style>${cssContent}</style>
         <style>
+          @page { margin: 0; size: 80mm auto; }
           @media print {
+            html, body {
+              width: 80mm !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
             .print\\:hidden { display: none !important; }
             .print\\:p-0 { padding: 0 !important; }
             .print\\:m-0 { margin: 0 !important; }
@@ -121,13 +136,19 @@ ipcMain.on('silent-print', (event, { htmlContent, printerName }) => {
   printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`);
   
   printWindow.webContents.on('did-finish-load', () => {
-    printWindow.webContents.print({
-      silent: true,
-      deviceName: printerName
-    }, (success, failureReason) => {
-      if (!success) console.log('Print failed:', failureReason);
-      printWindow.close();
-    });
+    // Slight delay to ensure CSS is fully painted before sending to printer spooler
+    setTimeout(() => {
+      printWindow.webContents.print({
+        silent: silent,
+        deviceName: printerName,
+        margins: { marginType: 'none' },
+        printBackground: true,
+        color: false
+      }, (success, failureReason) => {
+        if (!success) console.log('Print failed:', failureReason);
+        printWindow.close();
+      });
+    }, 500);
   });
 });
 

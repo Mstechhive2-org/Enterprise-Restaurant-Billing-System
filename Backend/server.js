@@ -48,7 +48,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '10kb' })); // Body limit is a good practice too
+app.use(express.json({ limit: '10mb' })); // Body limit is increased to support base64 images
 
 // 3. Data sanitization against NoSQL query injection
 // Custom middleware to handle Express 5 read-only properties (req.query)

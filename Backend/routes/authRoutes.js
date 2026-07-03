@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { login, logout, logoutAll, refreshToken, createAdmin, setupAdmin, updateProfile } from '../controllers/authController.js';
+import { login, logout, logoutAll, refreshToken, createAdmin, setupAdmin, updateProfile, register, getUsers, deleteUser } from '../controllers/authController.js';
 import sessionManager from '../utils/sessionManager.js';
 import { authenticateToken, requireAdmin, optionalAuthenticateToken } from '../middleware/auth.js';
 
@@ -18,6 +18,11 @@ router.post('/clear-sessions', authenticateToken, requireAdmin, (req, res) => {
 router.post('/logout', authenticateToken, logout);
 router.post('/logout-all', authenticateToken, logoutAll);
 router.put('/profile', authenticateToken, updateProfile);
+
+// Staff management (Admin only)
+router.get('/users', authenticateToken, requireAdmin, getUsers);
+router.post('/users', authenticateToken, requireAdmin, register);
+router.delete('/users/:id', authenticateToken, requireAdmin, deleteUser);
 
 // Admin routes (public if no admin exists, protected if admins exist)
 // Uses optional auth middleware so token is verified if provided, but not required

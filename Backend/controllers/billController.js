@@ -165,6 +165,40 @@ export const generateBill = async (req, res) => {
   }
 };
 
+// Transfer Bill to a new Table
+export const transferTable = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newTableNo } = req.body;
+
+    if (!newTableNo) {
+      return res.status(400).json({ message: 'New table number is required' });
+    }
+
+    const order = await Bill.findById(id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    
+    if (order.status !== 'Open') {
+      return res.status(400).json({ message: 'Only open orders can be transferred' });
+    }
+
+    // Check if new table is already occupied by an Open order
+    const existingOrder = await Bill.findOne({ tableNo: newTableNo, status: 'Open' });
+    if (existingOrder) {
+      return res.status(400).json({ message: `Table ${newTableNo} is already occupied` });
+    }
+
+    order.tableNo = newTableNo;
+    await order.save();
+    
+    cache.clear('openOrders');
+    
+    return res.json({ message: 'Table transferred successfully', order });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // Settle Bill (Payment) - Saves bill to history (status: 'Paid')
 export const settleBill = async (req, res) => {
   try {
@@ -357,11 +391,11 @@ export const getDailyStats = async (req, res) => {
     
     const cacheKey = cache.getCacheKey('dailyStats', today.toISOString().split('T')[0]);
     
-    // Check cache first (30 second TTL for real-time feel)
-    const cached = cache.get(cacheKey);
-    if (cached) {
-      return res.json(cached);
-    }
+    // Cache checking disabled
+    // const cached = cache.get(cacheKey);
+    // if (cached) {
+    //   return res.json(cached);
+    // }
 
     // Optimized: Single aggregation pipeline for better performance
     // Handle each query separately to catch individual errors
@@ -560,8 +594,8 @@ export const getDailyStats = async (req, res) => {
       openKOTs: openKOTs || []
     };
     
-    // Cache the result for 30 seconds
-    cache.set(cacheKey, response, 30000);
+    // Cache removed to ensure immediate reflection on dashboard
+    // cache.set(cacheKey, response, 30000);
     
     res.json(response);
   } catch (error) {

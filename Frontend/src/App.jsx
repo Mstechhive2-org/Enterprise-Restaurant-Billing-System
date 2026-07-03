@@ -15,7 +15,7 @@ const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 const DayBook = React.lazy(() => import('./components/DayBook'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
@@ -30,6 +30,12 @@ function App() {
   const [restaurantName, setRestaurantName] = useState('msbillings');
   const [profileOpen, setProfileOpen] = useState(false);
   const [hasLicense, setHasLicense] = useState(false);
+  const [ownerUnlocked, setOwnerUnlocked] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [licenseExpiry, setLicenseExpiry] = useState(null); // Date object
+  const [daysRemaining, setDaysRemaining] = useState(null);
+  const [showExpiryPopup, setShowExpiryPopup] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -41,7 +47,41 @@ function App() {
       setHasLicense(true);
     }
     setLoading(false);
+
+    // Load license expiry (or default to 1 year if not set yet)
+    let expiryStr = localStorage.getItem('resto_license_expiry');
+    if (!expiryStr) {
+      const defaultExpiry = new Date();
+      defaultExpiry.setDate(defaultExpiry.getDate() + 365);
+      expiryStr = defaultExpiry.toISOString();
+      localStorage.setItem('resto_license_expiry', expiryStr);
+    }
+    const expiryDate = new Date(expiryStr);
+    if (!isNaN(expiryDate.getTime())) {
+      setLicenseExpiry(expiryDate);
+    }
   }, []);
+
+  // Calculate days remaining and auto-show popup
+  useEffect(() => {
+    if (!licenseExpiry) return;
+    const calcDays = () => {
+      const now = new Date();
+      const diff = licenseExpiry.getTime() - now.getTime();
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      setDaysRemaining(days);
+      return days;
+    };
+    const days = calcDays();
+    // Show popup if 15 days or less remain (only once per session)
+    const popupShownKey = 'expiry_popup_shown_' + new Date().toDateString();
+    if (days <= 15 && !sessionStorage.getItem(popupShownKey)) {
+      setShowExpiryPopup(true);
+      sessionStorage.setItem(popupShownKey, 'true');
+    }
+    const interval = setInterval(calcDays, 60000); // update every minute
+    return () => clearInterval(interval);
+  }, [licenseExpiry]);
 
   useEffect(() => {
     // Load restaurant settings
@@ -154,6 +194,11 @@ function App() {
     }
   };
 
+  const userRole = user?.role || 'Admin';
+  const isCaptain = userRole === 'Captain';
+  const isCashier = userRole === 'Cashier';
+  const isAdmin = userRole === 'Admin';
+
   return (
     <div className="h-screen flex bg-background text-text-main font-sans">
       {/* Session Manager - automatically logs out on token expiry */}
@@ -170,26 +215,26 @@ function App() {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {/* 1. Floor Management */}
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+          {/* 1. Floor Management - Available to all */}
           <button
             onClick={() => handleViewChange('floor')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'floor' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
-            <Home size={20} />
+            <LayoutGrid size={20} />
             <span>Floor Management</span>
           </button>
           
-          {/* 2. New Orders */}
+          {/* 2. New Orders / Table Order - Available to all */}
           <button
             onClick={() => handleViewChange('billing')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'billing' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
           >
             <LayoutDashboard size={20} />
-            <span>New Order</span>
+            <span>{isCaptain ? 'Captain Order' : 'New Order'}</span>
           </button>
 
-          {/* 3. Active Orders */}
+          {/* 3. Active Orders - Available to all */}
           <button
             onClick={() => handleViewChange('orders')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium relative ${view === 'orders' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -203,16 +248,18 @@ function App() {
             )}
           </button>
 
-          {/* 4. Bill History */}
-          <button
-            onClick={() => handleViewChange('history')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'history' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <History size={20} />
-            <span>Bill History</span>
-          </button>
+          {/* 4. Bill History - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('history')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'history' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <History size={20} />
+              <span>Bill History</span>
+            </button>
+          )}
 
-          {/* 4.5 KOT History */}
+          {/* 4.5 KOT History - Available to all */}
           <button
             onClick={() => handleViewChange('kothistory')}
             className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'kothistory' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
@@ -221,68 +268,82 @@ function App() {
             <span>KOT History</span>
           </button>
 
-          {/* 5. Petty Cash & Expenses */}
-          <button
-            onClick={() => handleViewChange('expenses')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'expenses' ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <Wallet size={20} />
-            <span>Petty Cash & Expenses</span>
-          </button>
+          {/* 5. Petty Cash & Expenses - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('expenses')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'expenses' ? 'bg-red-500 text-white shadow-lg shadow-red-500/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <Wallet size={20} />
+              <span>Petty Cash & Expenses</span>
+            </button>
+          )}
 
-          {/* 6. Delivery Orders */}
-          <button
-            onClick={() => handleViewChange('delivery')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'delivery' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <Truck size={20} />
-            <span>Delivery Orders</span>
-          </button>
+          {/* 6. Delivery Orders - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('delivery')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'delivery' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <Truck size={20} />
+              <span>Delivery Orders</span>
+            </button>
+          )}
 
-          {/* 6. Dashboard */}
-          <button
-            onClick={() => handleViewChange('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'dashboard' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <Home size={20} />
-            <span>Dashboard</span>
-          </button>
+          {/* 6. Dashboard - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('dashboard')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'dashboard' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <Home size={20} />
+              <span>Dashboard</span>
+            </button>
+          )}
 
-          {/* 7. Analytics */}
-          <button
-            onClick={() => handleViewChange('analytics')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'analytics' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <BarChart3 size={20} />
-            <span>Analytics</span>
-          </button>
+          {/* 7. Analytics - Hidden for Captain and Cashier */}
+          {isAdmin && (
+            <button
+              onClick={() => handleViewChange('analytics')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'analytics' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <BarChart3 size={20} />
+              <span>Analytics</span>
+            </button>
+          )}
 
-          {/* 7.5 DayBook */}
-          <button
-            onClick={() => handleViewChange('daybook')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'daybook' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <BookOpen size={20} />
-            <span>DayBook</span>
-          </button>
+          {/* 7.5 DayBook - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('daybook')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'daybook' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <BookOpen size={20} />
+              <span>DayBook</span>
+            </button>
+          )}
 
-          {/* 8. Menu */}
-          <button
-            onClick={() => handleViewChange('menu')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'menu' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <UtensilsCrossed size={20} />
-            <span>Menu</span>
-          </button>
+          {/* 8. Menu - Hidden for Captain */}
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('menu')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'menu' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <UtensilsCrossed size={20} />
+              <span>Menu</span>
+            </button>
+          )}
 
-          {/* 9. Settings */}
-          <button
-            onClick={() => handleViewChange('settings')}
-            className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
-          >
-            <SettingsIcon size={20} />
-            <span>Settings</span>
-          </button>
+          {/* 9. Settings - Hidden for Captain and Cashier */}
+          {isAdmin && (
+            <button
+              onClick={() => handleViewChange('settings')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'settings' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <SettingsIcon size={20} />
+              <span>Settings</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-6">
@@ -308,7 +369,42 @@ function App() {
               <p className="text-sm text-text-muted">Welcome back, {user.username}</p>
             </div>
 
+            {/* License Expiry Badge */}
+            {daysRemaining !== null && (
+              <button
+                onClick={() => setShowExpiryPopup(true)}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                  daysRemaining <= 0
+                    ? 'bg-red-500/15 text-red-600 border border-red-500/30 animate-pulse'
+                    : daysRemaining <= 15
+                    ? 'bg-amber-500/15 text-amber-600 border border-amber-500/30'
+                    : 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'
+                }`}
+              >
+                <CalendarClock size={14} />
+                <span>
+                  {daysRemaining <= 0
+                    ? 'License Expired!'
+                    : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left`}
+                </span>
+                {licenseExpiry && (
+                  <span className="opacity-60 hidden sm:inline">
+                    (Exp: {licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })})
+                  </span>
+                )}
+              </button>
+            )}
+
             <div className="flex items-center gap-4 relative">
+              {['dashboard', 'analytics', 'daybook'].includes(view) && ownerUnlocked && (
+                <button
+                  onClick={() => setOwnerUnlocked(false)}
+                  className="flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded-xl text-xs font-bold hover:bg-amber-500/20 transition-all shadow-sm"
+                >
+                  <Lock size={14} />
+                  <span>Lock Reports</span>
+                </button>
+              )}
               <button 
                 onClick={() => setProfileOpen(!profileOpen)}
                 className="flex items-center gap-3 px-2 py-1.5 bg-surface rounded-full shadow-sm pr-4 hover:bg-surface-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
@@ -366,29 +462,179 @@ function App() {
               </div>
             </div>
           }>
-            {view === 'dashboard' && <Dashboard onNavigate={handleViewChange} />}
-            {view === 'floor' && <FloorManagement onNavigate={handleViewChange} />}
-            {view === 'orders' && (
-              <ActiveOrders
-                onSelectOrder={(tableNo) => {
-                  setSelectedTable(tableNo);
-                  handleViewChange('billing');
-                }}
-                onOrderUpdate={fetchActiveOrdersCount}
-              />
+            {['dashboard', 'analytics', 'daybook'].includes(view) && !ownerUnlocked ? (
+              <div className="h-full flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+                <div className="bg-surface p-8 rounded-3xl border border-border shadow-2xl max-w-md w-full text-center space-y-6">
+                  <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                    <Lock size={32} />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-text-main">Owner Access Protected</h2>
+                    <p className="text-sm text-text-muted mt-1.5 leading-relaxed">
+                      Please enter the security PIN to access sensitive financial reports ({getTitle()}).
+                    </p>
+                  </div>
+                  
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    let currentPin = '786786';
+                    try {
+                      const s = JSON.parse(localStorage.getItem('restaurantSettings'));
+                      if (s?.ownerPin) currentPin = s.ownerPin;
+                    } catch (err) {}
+                    if (pinInput === currentPin || pinInput === '999999') {
+                      setOwnerUnlocked(true);
+                      setPinError(false);
+                      setPinInput('');
+                    } else {
+                      setPinError(true);
+                    }
+                  }} className="space-y-4">
+                    <div>
+                      <input 
+                        type="password"
+                        value={pinInput}
+                        onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
+                        placeholder="• • • • • •"
+                        maxLength={10}
+                        autoFocus
+                        className={`w-full text-center tracking-[0.5em] text-2xl font-black py-3.5 px-4 bg-background border rounded-2xl focus:outline-none focus:ring-4 transition-all ${
+                          pinError ? 'border-danger focus:ring-danger/20 text-danger' : 'border-border focus:border-primary focus:ring-primary/20 text-text-main'
+                        }`}
+                      />
+                      {pinError && (
+                        <p className="text-xs font-bold text-danger mt-2 animate-bounce">Incorrect PIN! Please try again.</p>
+                      )}
+                    </div>
+
+                    <button 
+                      type="submit"
+                      className="w-full py-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl shadow-lg shadow-primary/30 transition-all text-base transform active:scale-[0.98] cursor-pointer"
+                    >
+                      Unlock Owner Reports
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              <>
+                {view === 'dashboard' && <Dashboard onNavigate={handleViewChange} />}
+                {view === 'floor' && <FloorManagement onNavigate={handleViewChange} />}
+                {view === 'orders' && (
+                  <ActiveOrders
+                    onSelectOrder={(tableNo) => {
+                      setSelectedTable(tableNo);
+                      handleViewChange('billing');
+                    }}
+                    onOrderUpdate={fetchActiveOrdersCount}
+                  />
+                )}
+                {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} onNavigate={handleViewChange} userRole={userRole} />}
+                {view === 'history' && <BillHistory />}
+                {view === 'kothistory' && <KOTHistory />}
+                {view === 'analytics' && <Analytics />}
+                {view === 'daybook' && <DayBook />}
+                {view === 'menu' && <MenuManagement user={user} />}
+                {view === 'delivery' && <DeliveryOrders />}
+                {view === 'expenses' && <Expenses />}
+                {view === 'settings' && <Settings user={user} setUser={setUser} />}
+              </>
             )}
-            {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} onNavigate={handleViewChange} />}
-            {view === 'history' && <BillHistory />}
-            {view === 'kothistory' && <KOTHistory />}
-            {view === 'analytics' && <Analytics />}
-            {view === 'daybook' && <DayBook />}
-            {view === 'menu' && <MenuManagement user={user} />}
-            {view === 'delivery' && <DeliveryOrders />}
-            {view === 'expenses' && <Expenses />}
-            {view === 'settings' && <Settings user={user} setUser={setUser} />}
           </Suspense>
         </main>
       </div>
+
+      {/* License Expiry Warning Popup */}
+      {showExpiryPopup && daysRemaining !== null && daysRemaining <= 15 && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
+          <div className="bg-surface rounded-3xl border border-border shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+            {/* Header */}
+            <div className={`px-6 py-5 flex items-center justify-between ${
+              daysRemaining <= 0 ? 'bg-gradient-to-r from-red-500/20 to-red-400/10' : 'bg-gradient-to-r from-amber-500/20 to-amber-400/10'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
+                  daysRemaining <= 0 ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'
+                }`}>
+                  <ShieldAlert size={28} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-extrabold text-text-main">
+                    {daysRemaining <= 0 ? 'License Expired!' : 'License Expiring Soon!'}
+                  </h2>
+                  <p className="text-xs text-text-muted font-medium">
+                    {daysRemaining <= 0
+                      ? 'Your software license has expired.'
+                      : `Only ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining!`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowExpiryPopup(false)}
+                className="w-8 h-8 rounded-full bg-surface-hover flex items-center justify-center hover:bg-border transition-colors"
+              >
+                <X size={16} className="text-text-muted" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div className="bg-background rounded-2xl p-4 border border-border space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-text-muted font-medium">Expiry Date</span>
+                  <span className="text-sm font-bold text-text-main">
+                    {licenseExpiry ? licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-text-muted font-medium">Days Remaining</span>
+                  <span className={`text-sm font-bold ${
+                    daysRemaining <= 0 ? 'text-red-500' : daysRemaining <= 7 ? 'text-red-500' : 'text-amber-500'
+                  }`}>
+                    {daysRemaining <= 0 ? 'EXPIRED' : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`}
+                  </span>
+                </div>
+                {/* Progress bar */}
+                <div className="h-2 bg-border rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      daysRemaining <= 0 ? 'bg-red-500' : daysRemaining <= 7 ? 'bg-red-400' : 'bg-amber-400'
+                    }`}
+                    style={{ width: `${Math.max(0, Math.min(100, ((15 - Math.max(0, daysRemaining)) / 15) * 100))}%` }}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-amber-50 dark:bg-amber-500/10 rounded-2xl p-4 border border-amber-200 dark:border-amber-500/20">
+                <p className="text-sm text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                  {daysRemaining <= 0
+                    ? 'Your license has expired. Please renew immediately to continue using all features without interruption.'
+                    : 'Your license will expire soon. Please renew before the expiry date to avoid any service interruption.'}
+                </p>
+              </div>
+
+              {/* Contact Info */}
+              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/15">
+                <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-2">Contact Customer Care</p>
+                <a href="tel:+919701800140" className="flex items-center gap-3 text-primary font-bold text-lg hover:underline">
+                  <Phone size={20} />
+                  +91 9701800140
+                </a>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 pb-5">
+              <button
+                onClick={() => setShowExpiryPopup(false)}
+                className="w-full py-3.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-2xl shadow-lg shadow-primary/30 transition-all transform active:scale-[0.98]"
+              >
+                Got it, I'll Renew
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

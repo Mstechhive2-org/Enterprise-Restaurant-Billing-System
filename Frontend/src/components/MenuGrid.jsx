@@ -2,6 +2,40 @@ import React, { useState, useEffect } from 'react';
 import { getMenuItems } from '../api/menu';
 import { getCategories } from '../api/category';
 
+const formatImageUrl = (url) => {
+  if (!url) return '';
+  let trimmed = url.trim();
+
+  if (trimmed.includes('google.com/imgres') || trimmed.includes('imgurl=')) {
+    try {
+      const urlObj = new URL(trimmed);
+      const extracted = urlObj.searchParams.get('imgurl');
+      if (extracted) trimmed = extracted;
+    } catch (e) {
+      const match = trimmed.match(/[?&]imgurl=([^&]+)/);
+      if (match && match[1]) trimmed = decodeURIComponent(match[1]);
+    }
+  } else if (trimmed.includes('mediaurl=')) {
+    try {
+      const urlObj = new URL(trimmed);
+      const extracted = urlObj.searchParams.get('mediaurl');
+      if (extracted) trimmed = extracted;
+    } catch (e) {}
+  }
+
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  if (/^[A-Za-z0-9+/=]{30,}$/.test(trimmed) || trimmed.startsWith('iVBOR') || trimmed.startsWith('/9j/') || trimmed.startsWith('R0lGOD') || trimmed.startsWith('UklGR')) {
+    let mime = 'jpeg';
+    if (trimmed.startsWith('iVBOR')) mime = 'png';
+    else if (trimmed.startsWith('R0lGOD')) mime = 'gif';
+    else if (trimmed.startsWith('UklGR')) mime = 'webp';
+    return `data:image/${mime};base64,${trimmed}`;
+  }
+  return trimmed;
+};
+
 const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -105,7 +139,20 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
               className="bg-surface rounded-2xl p-5 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden flex flex-col h-full border border-border/50 hover:border-primary/20"
               onClick={() => onSelectItem(item)}
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110 pointer-events-none" />
+
+              {formatImageUrl(item.image) && (
+                <div className="w-full h-36 mb-4 rounded-xl overflow-hidden relative shrink-0 bg-background/60 border border-border/40 shadow-sm">
+                  <img
+                    src={formatImageUrl(item.image)}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.parentElement.style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
 
               <div className="flex flex-col h-full justify-between relative z-10">
                 <div>

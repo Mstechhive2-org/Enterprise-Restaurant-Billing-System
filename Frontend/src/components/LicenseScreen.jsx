@@ -68,7 +68,7 @@ const LicenseScreen = ({ onValidLicense }) => {
         setError(data.message || 'Invalid license key.');
       }
     } catch (err) {
-      setError('Could not connect to the activation server. Please check your internet connection.');
+      setError(`Connection Error: ${err.message}. Please check your internet connection or contact support.`);
     } finally {
       setLoading(false);
     }

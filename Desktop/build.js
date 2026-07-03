@@ -31,6 +31,10 @@ function copySync(src, dest, ignore = []) {
 if (fs.existsSync(desktopFrontend)) fs.rmSync(desktopFrontend, { recursive: true, force: true });
 if (fs.existsSync(desktopBackend)) fs.rmSync(desktopBackend, { recursive: true, force: true });
 
+// Build Frontend
+console.log('Building Frontend...');
+execSync('npm run build', { cwd: path.join(__dirname, '../Frontend'), stdio: 'inherit' });
+
 // Copy Frontend
 console.log('Copying Frontend...');
 copySync(frontendDist, desktopFrontend);

@@ -13,7 +13,8 @@ import {
   generateKOT,
   getTodayKOTs,
   reopenOrder,
-  cancelOrder
+  cancelOrder,
+  transferTable
 } from '../controllers/billController.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
@@ -32,6 +33,7 @@ router.post('/generate/:id', authenticateToken, generateBill);
 router.post('/reopen/:id', authenticateToken, reopenOrder);
 router.post('/cancel/:id', authenticateToken, cancelOrder);
 router.post('/settle/:id', authenticateToken, settleBill);
+router.post('/transfer/:id', authenticateToken, transferTable);
 router.post('/kot/:id', authenticateToken, generateKOT);
 
 // DELETE - Admin only

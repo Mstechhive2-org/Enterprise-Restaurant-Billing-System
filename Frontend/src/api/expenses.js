@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
@@ -13,7 +13,7 @@ export const getExpenses = async (startDate, endDate) => {
       url += `?${params.toString()}`;
     }
 
-    const response = await axios.get(url);
+    const response = await api.get(url);
     return response.data;
   } catch (error) {
     console.error('Error fetching expenses:', error);
@@ -23,7 +23,7 @@ export const getExpenses = async (startDate, endDate) => {
 
 export const addExpense = async (expenseData) => {
   try {
-    const response = await axios.post(`${API_URL}/expenses`, expenseData);
+    const response = await api.post(`${API_URL}/expenses`, expenseData);
     return response.data;
   } catch (error) {
     console.error('Error adding expense:', error);
@@ -33,7 +33,7 @@ export const addExpense = async (expenseData) => {
 
 export const deleteExpense = async (id) => {
   try {
-    const response = await axios.delete(`${API_URL}/expenses/${id}`);
+    const response = await api.delete(`${API_URL}/expenses/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error deleting expense:', error);

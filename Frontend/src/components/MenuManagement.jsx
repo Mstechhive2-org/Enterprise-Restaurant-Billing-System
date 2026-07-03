@@ -6,6 +6,40 @@ import { Plus, Edit2, Trash2, X, Search, FolderPlus, Folder, FolderOpen, Chevron
 import ConfirmationModal from './ConfirmationModal';
 import Toast from './Toast';
 
+const formatImageUrl = (url) => {
+  if (!url) return '';
+  let trimmed = url.trim();
+
+  if (trimmed.includes('google.com/imgres') || trimmed.includes('imgurl=')) {
+    try {
+      const urlObj = new URL(trimmed);
+      const extracted = urlObj.searchParams.get('imgurl');
+      if (extracted) trimmed = extracted;
+    } catch (e) {
+      const match = trimmed.match(/[?&]imgurl=([^&]+)/);
+      if (match && match[1]) trimmed = decodeURIComponent(match[1]);
+    }
+  } else if (trimmed.includes('mediaurl=')) {
+    try {
+      const urlObj = new URL(trimmed);
+      const extracted = urlObj.searchParams.get('mediaurl');
+      if (extracted) trimmed = extracted;
+    } catch (e) {}
+  }
+
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) {
+    return trimmed;
+  }
+  if (/^[A-Za-z0-9+/=]{30,}$/.test(trimmed) || trimmed.startsWith('iVBOR') || trimmed.startsWith('/9j/') || trimmed.startsWith('R0lGOD') || trimmed.startsWith('UklGR')) {
+    let mime = 'jpeg';
+    if (trimmed.startsWith('iVBOR')) mime = 'png';
+    else if (trimmed.startsWith('R0lGOD')) mime = 'gif';
+    else if (trimmed.startsWith('UklGR')) mime = 'webp';
+    return `data:image/${mime};base64,${trimmed}`;
+  }
+  return trimmed;
+};
+
 const MenuManagement = ({ user }) => {
   const [activeTab, setActiveTab] = useState('items');
   const [items, setItems] = useState([]);
@@ -22,6 +56,10 @@ const MenuManagement = ({ user }) => {
   const [toast, setToast] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
   const itemsPerPage = 20;
 
   // Form State
@@ -161,6 +199,7 @@ const MenuManagement = ({ user }) => {
 
       const itemData = {
         ...formData,
+        image: formatImageUrl(formData.image),
         price,
         taxRate
       };
@@ -516,7 +555,25 @@ const MenuManagement = ({ user }) => {
               <tbody>
                 {paginatedItems.map(item => (
                   <tr key={item._id} className="border-b border-border hover:bg-surface-hover transition-colors group">
-                    <td className="p-4 font-medium text-text-main">{item.name}</td>
+                    <td className="p-4 font-medium text-text-main">
+                      <div className="flex items-center gap-3">
+                        {formatImageUrl(item.image) ? (
+                          <img
+                            src={formatImageUrl(item.image)}
+                            alt={item.name}
+                            className="w-10 h-10 rounded-xl object-cover bg-background border border-border shrink-0 shadow-sm"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0">
+                            {item.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{item.name}</span>
+                      </div>
+                    </td>
                     <td className="p-4 text-text-muted">
                       <span className="px-2 py-1 bg-background rounded-md border border-border text-xs">
                         {item.category?.name || item.category}
@@ -790,15 +847,75 @@ const MenuManagement = ({ user }) => {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-text-muted">Image URL (Optional)</label>
-                <input
-                  type="text"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary"
-                  placeholder="https://example.com/image.jpg"
-                />
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-text-muted">Item Image (Optional)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: formatImageUrl(e.target.value) })}
+                    className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-text-main focus:outline-none focus:border-primary text-sm"
+                    placeholder="Paste image URL or upload file..."
+                  />
+                  <label className="bg-surface-hover hover:bg-border text-text-main px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1 text-sm border border-border shrink-0 transition-colors">
+                    <span>Upload</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                              const canvas = document.createElement('canvas');
+                              const MAX_WIDTH = 600;
+                              const MAX_HEIGHT = 600;
+                              let width = img.width;
+                              let height = img.height;
+
+                              if (width > height) {
+                                if (width > MAX_WIDTH) {
+                                  height = Math.round((height * MAX_WIDTH) / width);
+                                  width = MAX_WIDTH;
+                                }
+                              } else {
+                                if (height > MAX_HEIGHT) {
+                                  width = Math.round((width * MAX_HEIGHT) / height);
+                                  height = MAX_HEIGHT;
+                                }
+                              }
+
+                              canvas.width = width;
+                              canvas.height = height;
+                              const ctx = canvas.getContext('2d');
+                              ctx.drawImage(img, 0, 0, width, height);
+                              const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                              setFormData({ ...formData, image: compressedDataUrl });
+                            };
+                            img.src = event.target.result;
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                {formatImageUrl(formData.image) && (
+                  <div className="relative mt-2 w-full h-32 rounded-xl overflow-hidden bg-background border border-border flex items-center justify-center">
+                    <img src={formatImageUrl(formData.image)} alt="Preview" className="w-full h-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image: '' })}
+                      className="absolute top-2 right-2 bg-black/60 text-white p-1.5 rounded-full hover:bg-black/80 transition-colors text-xs"
+                      title="Remove image"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">

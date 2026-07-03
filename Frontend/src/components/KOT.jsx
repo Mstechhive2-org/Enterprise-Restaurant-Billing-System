@@ -16,7 +16,8 @@ const KOT = ({ order, onClose }) => {
   const handlePrint = () => {
     if (window.electronAPI && settings.kotPrinter) {
       const htmlContent = document.getElementById('kot-print-area').outerHTML;
-      window.electronAPI.silentPrint(htmlContent, settings.kotPrinter);
+      const isSilent = settings.silentPrinting !== false;
+      window.electronAPI.silentPrint(htmlContent, settings.kotPrinter, isSilent);
     } else {
       window.print();
     }
@@ -45,56 +46,61 @@ const KOT = ({ order, onClose }) => {
       </div>
 
       {/* KOT Preview */}
-      <div className="receipt-print bg-white text-black w-full max-w-sm shadow-2xl print:shadow-none border-2 border-black m-10 print:m-0 print:max-w-none print:border-0 overflow-hidden font-mono">
-        <div className="p-6 print:p-0 print:pb-2">
+      {/* KOT Preview */}
+      <div className="receipt-print bg-white text-black w-full max-w-[320px] mx-auto shadow-2xl print:shadow-none border border-gray-300 m-10 print:m-0 print:border-0 overflow-hidden" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+        <div className="p-4 print:p-0 print:pb-2">
           {/* Header */}
-          <div className="text-center mb-4 print:mb-2 print:mt-1">
-            <h1 className="text-2xl print:text-xl font-bold uppercase tracking-wider mb-2">{settings.restaurantName}</h1>
-            <h2 className="text-xl print:text-lg font-bold uppercase tracking-[0.2em] border-t-2 border-dashed border-black pt-2 print:pt-1">
+          <div className="text-center mb-3 print:mb-2">
+            <h1 className="text-[24px] print:text-[24px] font-[900] uppercase tracking-tight leading-tight text-black">{settings.restaurantName}</h1>
+            <div className="text-[22px] print:text-[22px] font-[900] uppercase tracking-widest text-black mt-2 mb-1">
               K.O.T
-            </h2>
-            {order.kotNumber && <p className="text-sm font-bold border-b-2 border-dashed border-black pb-2 mb-2">#{order.kotNumber}</p>}
-            {!order.kotNumber && <p className="text-sm font-bold border-b-2 border-dashed border-black pb-2 mb-2">(Kitchen Order Ticket)</p>}
+            </div>
+            {order.kotNumber ? (
+              <p className="text-[20px] print:text-[20px] font-[900] text-black border-b-2 border-dashed border-black pb-1">#{order.kotNumber}</p>
+            ) : (
+              <p className="text-[16px] print:text-[16px] font-bold text-black border-b-2 border-dashed border-black pb-1">(Kitchen Order Ticket)</p>
+            )}
           </div>
 
           {/* Info */}
-          <div className="space-y-2 print:space-y-1 text-sm uppercase mb-6 print:mb-4 font-bold border-b-2 border-dashed border-black pb-4">
-            <div className="flex justify-between">
-              <span>DATE: {new Date(order.createdAt || Date.now()).toLocaleDateString()}</span>
-              <span>TIME: {new Date(order.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <div className="flex justify-between text-base">
-              <span>TYPE: {order.billType || order.orderType || 'Dine-In'}</span>
-              <span className="font-extrabold text-lg">TABLE: {order.tableNo || 'N/A'}</span>
-            </div>
-            {order.orderSource && order.orderSource !== 'Direct' && (
-              <p className="text-orange-600 font-extrabold">{order.orderSource} ORDER</p>
-            )}
-            {order.customerName && <p>CUSTOMER: {order.customerName}</p>}
+          <div className="flex justify-between items-center text-[14px] print:text-[14px] font-bold text-black mb-1">
+            <span>{new Date(order.createdAt || Date.now()).toLocaleDateString('en-GB').replace(/\//g, '-')} {new Date(order.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span>TYPE: {order.billType || order.orderType || 'Dine-In'}</span>
           </div>
+          <div className="text-[20px] print:text-[20px] font-[900] text-black mb-1 border-b-2 border-dashed border-black pb-1">
+            TABLE: {order.tableNo || 'N/A'}
+          </div>
+          {order.orderSource && order.orderSource !== 'Direct' && (
+            <p className="text-[18px] print:text-[18px] font-[900] text-black mb-1">{order.orderSource} ORDER</p>
+          )}
+          {order.customerName && (
+            <p className="text-[16px] print:text-[16px] font-bold text-black mb-1">CUSTOMER: {order.customerName}</p>
+          )}
 
           {/* Items Header */}
-          <div className="flex justify-between gap-2 print:gap-1 text-sm font-bold uppercase mb-3 border-b-2 border-black pb-1">
-            <div className="w-12">QTY</div>
-            <div className="flex-1">ITEM</div>
+          <div className="border-y-2 border-dashed border-black py-1 mb-1">
+            <div className="flex justify-between gap-1 text-[16px] print:text-[16px] font-[900] uppercase text-black">
+              <div className="w-[45px] text-center">QTY</div>
+              <div className="flex-1">ITEM</div>
+            </div>
           </div>
 
           {/* Items List */}
-          <div className="space-y-3 mb-6">
+          <div className="mb-2 border-b-2 border-dashed border-black pb-2">
             {order.items && order.items.length > 0 ? (
               order.items.map((item, idx) => (
-                <div key={idx} className="flex justify-between gap-2 print:gap-1 text-base uppercase border-b border-dashed border-gray-300 pb-2">
-                  <div className="w-12 font-extrabold text-lg">{item.quantity || 0}</div>
-                  <div className="flex-1 break-words leading-tight overflow-wrap-anywhere font-bold text-lg">{item.name || 'Unknown Item'}</div>
+                <div key={idx} className="flex justify-between gap-2 text-[20px] print:text-[20px] font-[900] uppercase text-black pb-2 pt-1 border-b border-dotted border-gray-400 last:border-0 leading-tight">
+                  <div className="w-[45px] text-center text-[22px] print:text-[22px]">{item.quantity || 0}</div>
+                  <div className="flex-1 break-words">{item.name || 'Unknown Item'}</div>
                 </div>
               ))
             ) : (
-              <div className="text-sm text-center text-gray-500 py-4">No items found</div>
+              <div className="text-sm text-center text-black font-bold py-2">No items</div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs uppercase space-y-1 mt-8 border-t-2 border-dashed border-black pt-4">
+          <div className="text-center text-[12px] print:text-[12px] font-bold text-black pt-1">
             <p>*** END OF KOT ***</p>
           </div>
           

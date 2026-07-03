@@ -2,5 +2,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   getPrinters: () => ipcRenderer.invoke('get-printers'),
-  silentPrint: (htmlContent, printerName) => ipcRenderer.send('silent-print', { htmlContent, printerName })
+  silentPrint: (htmlContent, printerName, silent = true) => ipcRenderer.send('silent-print', { htmlContent, printerName, silent }),
 });

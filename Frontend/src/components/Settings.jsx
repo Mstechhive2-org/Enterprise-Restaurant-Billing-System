@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Building, Phone, MapPin, Mail, FileText, Settings as SettingsIcon, User } from 'lucide-react';
+import { Save, Building, Phone, MapPin, Mail, FileText, Settings as SettingsIcon, User, Upload, Trash2, Image as ImageIcon } from 'lucide-react';
 import Toast from './Toast';
 import { apiUpdateProfile } from '../api/auth';
 
@@ -11,9 +11,20 @@ const Settings = ({ user, setUser }) => {
     phone: '9876543210',
     email: 'support@abcrestaurant.com',
     gstin: '36ABCDE1234F1Z5',
+    upiId: 'maheshsiva864@oksbi',
+    ownerPin: '786786',
     footerMessage: '*** THANK YOU! VISIT AGAIN ***',
     kotPrinter: '',
-    billingPrinter: ''
+    billingPrinter: '',
+    silentPrinting: true,
+    enableQrPayment: true,
+    enableCgst: true,
+    cgstRate: 2.5,
+    enableSgst: true,
+    sgstRate: 2.5,
+    enableGst: false,
+    gstRate: 5,
+    logo: ''
   });
 
   const [username, setUsername] = useState(user ? user.username : '');
@@ -25,7 +36,10 @@ const Settings = ({ user, setUser }) => {
     // Load settings from localStorage
     const savedSettings = localStorage.getItem('restaurantSettings');
     if (savedSettings) {
-      setSettings(prev => ({ ...prev, ...JSON.parse(savedSettings) }));
+      const parsed = JSON.parse(savedSettings);
+      if (!parsed.upiId || parsed.upiId === 'msbillings@upi') parsed.upiId = 'maheshsiva864@oksbi';
+      if (!parsed.ownerPin) parsed.ownerPin = '786786';
+      setSettings(prev => ({ ...prev, ...parsed }));
     }
 
     // Load available printers if running in Desktop App
@@ -65,18 +79,29 @@ const Settings = ({ user, setUser }) => {
 
   const handleInputChange = (field, value) => {
     if (field === 'phone') {
-      // Allow only digits and limit to 10 characters
-      if (/^\d*$/.test(value) && value.length <= 10) {
-        setSettings(prev => ({
-          ...prev,
-          [field]: value
-        }));
+      value = value.replace(/\D/g, '').slice(0, 10);
+    }
+    if (field === 'ownerPin') {
+      value = value.replace(/\D/g, '').slice(0, 6);
+    }
+    setSettings(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setToast({ message: 'Image size should be less than 2MB', type: 'error' });
+        return;
       }
-    } else {
-      setSettings(prev => ({
-        ...prev,
-        [field]: value
-      }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        handleInputChange('logo', reader.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -131,7 +156,7 @@ const Settings = ({ user, setUser }) => {
                     <FileText className="text-primary" size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-text-main">Desktop Printers</h2>
+                    <h2 className="text-xl font-bold text-text-main">Desktop Printers <span className="text-sm font-normal text-primary">(v1.4.4)</span></h2>
                     <p className="text-xs text-text-muted mt-0.5">Configure auto-printing</p>
                   </div>
                 </div>
@@ -175,6 +200,22 @@ const Settings = ({ user, setUser }) => {
                     ))}
                   </select>
                 </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border mt-4">
+                  <div className="space-y-0.5">
+                    <label className="text-sm font-semibold text-text-main">Silent Printing</label>
+                    <p className="text-xs text-text-muted">Print directly without showing the print dialog</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={settings.silentPrinting !== false}
+                      onChange={(e) => handleInputChange('silentPrinting', e.target.checked)}
+                      disabled={!window.electronAPI}
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                  </label>
+                </div>
                 {!window.electronAPI && (
                   <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-200">
                     Silent printing is only available in the Desktop App. In the web version, a print dialog will always appear.
@@ -193,6 +234,43 @@ const Settings = ({ user, setUser }) => {
               </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Restaurant Logo */}
+              <div className="md:col-span-2 space-y-2 pb-2">
+                <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                  <ImageIcon size={14} />
+                  Printed Bill Logo
+                </label>
+                <div className="flex flex-wrap items-center gap-4 bg-background p-3 rounded-xl border border-border">
+                  {settings.logo ? (
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-white rounded-lg border border-border shadow-sm">
+                        <img src={settings.logo} alt="Restaurant Logo" className="h-14 max-w-[140px] object-contain" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleInputChange('logo', '')}
+                        className="flex items-center gap-2 px-3 py-2 bg-error/10 hover:bg-error/20 text-error rounded-lg text-sm font-bold transition-all"
+                      >
+                        <Trash2 size={16} />
+                        Remove Logo
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg text-sm font-bold cursor-pointer transition-all">
+                      <Upload size={16} />
+                      Upload Logo (PNG/JPG)
+                      <input
+                        type="file"
+                        accept="image/png, image/jpeg, image/jpg"
+                        onChange={handleLogoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  <span className="text-xs text-text-muted">Displayed at top of printed bills (max 2MB)</span>
+                </div>
+              </div>
+
               {/* Restaurant Name */}
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-text-main flex items-center gap-2">
@@ -298,6 +376,150 @@ const Settings = ({ user, setUser }) => {
                 />
               </div>
 
+              {/* Individual Tax Configuration */}
+              <div className="space-y-3 p-4 bg-background rounded-xl border border-border">
+                <h3 className="text-sm font-bold text-text-main flex items-center gap-2">
+                  <FileText size={14} className="text-primary" />
+                  Individual Tax Options (CGST, SGST, GST)
+                </h3>
+                <p className="text-xs text-text-muted">Toggle ON/OFF each tax option and set its default percentage rate.</p>
+
+                {/* CGST Option */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={settings.enableCgst !== false}
+                        onChange={(e) => handleInputChange('enableCgst', e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                    <span className="text-sm font-semibold text-text-main">Enable CGST</span>
+                  </div>
+                  {settings.enableCgst !== false && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={settings.cgstRate !== undefined ? settings.cgstRate : 2.5}
+                        onChange={(e) => handleInputChange('cgstRate', parseFloat(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 border border-border rounded-lg text-sm font-mono text-center bg-surface"
+                      />
+                      <span className="text-xs font-bold text-text-muted">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* SGST Option */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={settings.enableSgst !== false}
+                        onChange={(e) => handleInputChange('enableSgst', e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                    <span className="text-sm font-semibold text-text-main">Enable SGST</span>
+                  </div>
+                  {settings.enableSgst !== false && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={settings.sgstRate !== undefined ? settings.sgstRate : 2.5}
+                        onChange={(e) => handleInputChange('sgstRate', parseFloat(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 border border-border rounded-lg text-sm font-mono text-center bg-surface"
+                      />
+                      <span className="text-xs font-bold text-text-muted">%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* GST / IGST Option */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer"
+                        checked={settings.enableGst === true}
+                        onChange={(e) => handleInputChange('enableGst', e.target.checked)}
+                      />
+                      <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                    <span className="text-sm font-semibold text-text-main">Enable GST (or IGST)</span>
+                  </div>
+                  {settings.enableGst === true && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={settings.gstRate !== undefined ? settings.gstRate : 5}
+                        onChange={(e) => handleInputChange('gstRate', parseFloat(e.target.value) || 0)}
+                        className="w-20 px-2 py-1 border border-border rounded-lg text-sm font-mono text-center bg-surface"
+                      />
+                      <span className="text-xs font-bold text-text-muted">%</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* UPI ID */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                  <FileText size={14} />
+                  UPI Payment VPA / ID
+                </label>
+                <input
+                  type="text"
+                  value={settings.upiId || ''}
+                  onChange={(e) => handleInputChange('upiId', e.target.value)}
+                  className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main font-mono"
+                  placeholder="e.g. restaurant@upi or 9876543210@ybl"
+                />
+              </div>
+
+              {/* Dynamic QR Payment Toggle */}
+              <div className="flex items-center justify-between p-4 bg-background rounded-xl border border-border">
+                <div className="space-y-0.5">
+                  <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                    <FileText size={14} className="text-primary" />
+                    Dynamic QR Code Payment
+                  </label>
+                  <p className="text-xs text-text-muted">Show dynamic scan-to-pay UPI QR code on checkout screen & printed bills</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings.enableQrPayment !== false}
+                    onChange={(e) => handleInputChange('enableQrPayment', e.target.checked)}
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                </label>
+              </div>
+
+              {/* Owner Security PIN */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-text-main flex items-center gap-2">
+                  <User size={14} />
+                  Owner Security PIN (Reports Lock)
+                </label>
+                <input
+                  type="password"
+                  value={settings.ownerPin || '786786'}
+                  onChange={(e) => handleInputChange('ownerPin', e.target.value)}
+                  maxLength={10}
+                  className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background text-text-main font-mono tracking-widest font-bold"
+                  placeholder="••••••"
+                />
+              </div>
+
               {/* Footer Message */}
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold text-text-main flex items-center gap-2">
@@ -320,6 +542,11 @@ const Settings = ({ user, setUser }) => {
           <div className="bg-surface rounded-2xl p-4 border border-border shadow-lg">
             <h2 className="text-xl font-bold text-text-main mb-4">Receipt Preview</h2>
             <div className="bg-white border border-border rounded-xl p-4 max-w-xs mx-auto">
+              {settings.logo && (
+                <div className="flex justify-center mb-2">
+                  <img src={settings.logo} alt="Logo Preview" className="max-h-14 max-w-[140px] object-contain" />
+                </div>
+              )}
               <div className="text-center font-bold text-lg mb-2">{settings.restaurantName}</div>
               <div className="text-center text-sm text-gray-600 mb-4">
                 {settings.restaurantType}<br/>

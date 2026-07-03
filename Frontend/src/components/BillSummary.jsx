@@ -48,9 +48,16 @@ const BillSummary = ({
 
   // Delivery Props
   orderSource,
-  setOrderSource
+  setOrderSource,
+  userRole = 'Admin'
 }) => {
   const isLocked = orderStatus !== 'Open';
+  const isCaptain = userRole === 'Captain';
+  let taxSettings = { enableCgst: true, cgstRate: 2.5, enableSgst: true, sgstRate: 2.5, enableGst: false, gstRate: 5 };
+  try {
+    const s = JSON.parse(localStorage.getItem('restaurantSettings') || '{}');
+    taxSettings = { ...taxSettings, ...s };
+  } catch (e) {}
 
   return (
     <div className="flex flex-col h-full bg-surface relative">
@@ -159,7 +166,7 @@ const BillSummary = ({
                 <select
                   value={discount.type}
                   onChange={(e) => setDiscount({ ...discount, type: e.target.value })}
-                  disabled={isLocked || loading}
+                  disabled={isLocked || loading || isCaptain}
                   className="bg-background px-2 text-xs focus:outline-none border-r border-border font-mono text-text-main disabled:opacity-50"
                 >
                   <option value="percentage">%</option>
@@ -172,7 +179,7 @@ const BillSummary = ({
                     const val = e.target.value;
                     setDiscount({ ...discount, value: val === '' ? '' : parseFloat(val) })
                   }}
-                  disabled={isLocked || loading}
+                  disabled={isLocked || loading || isCaptain}
                   className="w-full px-3 py-1.5 text-sm focus:outline-none font-mono text-text-main bg-transparent disabled:opacity-50"
                 />
               </div>
@@ -186,7 +193,7 @@ const BillSummary = ({
                   const val = e.target.value;
                   setTaxRate(val === '' ? '' : parseFloat(val))
                 }}
-                disabled={isLocked || loading}
+                disabled={isLocked || loading || isCaptain}
                 className="w-full bg-background border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary transition-colors font-mono text-text-main disabled:opacity-50"
               />
             </div>
@@ -219,10 +226,58 @@ const BillSummary = ({
               <span>DISCOUNT</span>
               <span className="text-success">- ₹{discountAmount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm text-text-muted">
-              <span>TAX ({taxRate}%)</span>
-              <span>₹{taxAmount.toFixed(2)}</span>
-            </div>
+            {taxRate > 0 ? (
+              (() => {
+                const s = taxSettings;
+                const cRate = s.enableCgst !== false ? (s.cgstRate !== undefined ? s.cgstRate : 2.5) : 0;
+                const sRate = s.enableSgst !== false ? (s.sgstRate !== undefined ? s.sgstRate : 2.5) : 0;
+                const gRate = s.enableGst === true ? (s.gstRate !== undefined ? s.gstRate : 5) : 0;
+                const tot = cRate + sRate + gRate;
+                if (tot === 0) {
+                  return (
+                    <div className="flex justify-between text-sm text-text-muted">
+                      <span>TAX ({taxRate}%)</span>
+                      <span>₹{taxAmount.toFixed(2)}</span>
+                    </div>
+                  );
+                }
+                const cEff = (parseFloat(taxRate) * (cRate / tot));
+                const cAmt = taxAmount * (cRate / tot);
+                const sEff = (parseFloat(taxRate) * (sRate / tot));
+                const sAmt = taxAmount * (sRate / tot);
+                const gEff = (parseFloat(taxRate) * (gRate / tot));
+                const gAmt = taxAmount * (gRate / tot);
+
+                return (
+                  <>
+                    {cRate > 0 && (
+                      <div className="flex justify-between text-xs text-text-muted">
+                        <span>CGST ({cEff.toFixed(2)}%)</span>
+                        <span>₹{cAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {sRate > 0 && (
+                      <div className="flex justify-between text-xs text-text-muted">
+                        <span>SGST ({sEff.toFixed(2)}%)</span>
+                        <span>₹{sAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {gRate > 0 && (
+                      <div className="flex justify-between text-xs text-text-muted">
+                        <span>GST ({gEff.toFixed(2)}%)</span>
+                        <span>₹{gAmt.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {((cRate > 0 && sRate > 0) || ((cRate > 0 || sRate > 0) && gRate > 0)) && (
+                      <div className="flex justify-between text-sm font-semibold text-text-main pt-1">
+                        <span>TOTAL TAX ({taxRate}%)</span>
+                        <span>₹{taxAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()
+            ) : null}
             <div className="flex justify-between items-center pt-3 border-t-2 border-text-main">
               <span className="font-bold text-xl text-text-main">TOTAL</span>
               <span className="font-bold text-2xl text-primary">₹{total.toFixed(2)}</span>
@@ -230,7 +285,7 @@ const BillSummary = ({
           </div>
 
           {/* Action Buttons */}
-          <div className={`grid gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? 'grid-cols-2 lg:grid-cols-5' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')}`}>
+          <div className={`grid gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
             {orderStatus === 'Open' && (
               <>
                 <button 
@@ -239,7 +294,7 @@ const BillSummary = ({
                   className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer size={18} strokeWidth={2.5} />
-                  KOT
+                  FIRE KOT
                 </button>
                 <button 
                   onClick={onCancelOrder}
@@ -259,14 +314,16 @@ const BillSummary = ({
                     {loading ? '...' : 'SAVE'}
                   </button>
                 )}
-                <button 
-                  onClick={onGenerateBill}
-                  disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-md shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <FileText size={18} strokeWidth={2.5} />
-                  {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
-                </button>
+                {!isCaptain && (
+                  <button 
+                    onClick={onGenerateBill}
+                    disabled={cart.length === 0 || loading}
+                    className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-md shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <FileText size={18} strokeWidth={2.5} />
+                    {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
+                  </button>
+                )}
               </>
             )}
 
@@ -296,22 +353,26 @@ const BillSummary = ({
                   <Printer size={18} strokeWidth={2.5} />
                   KOT
                 </button>
-                <button 
-                  onClick={onPrintBill}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50"
-                  disabled={loading}
-                >
-                  <Printer size={18} strokeWidth={2.5} />
-                  PRINT
-                </button>
-                <button 
-                  onClick={onSettleBill}
-                  disabled={loading}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-md shadow-success/20 transition-all disabled:opacity-50"
-                >
-                  <CheckCircle size={18} strokeWidth={2.5} />
-                  {loading ? 'WAIT' : 'SETTLE'}
-                </button>
+                {!isCaptain && (
+                  <>
+                    <button 
+                      onClick={onPrintBill}
+                      className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50"
+                      disabled={loading}
+                    >
+                      <Printer size={18} strokeWidth={2.5} />
+                      PRINT
+                    </button>
+                    <button 
+                      onClick={onSettleBill}
+                      disabled={loading}
+                      className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-md shadow-success/20 transition-all disabled:opacity-50"
+                    >
+                      <CheckCircle size={18} strokeWidth={2.5} />
+                      {loading ? 'WAIT' : 'SETTLE'}
+                    </button>
+                  </>
+                )}
               </>
             )}
 

@@ -47,7 +47,8 @@ export const login = async (req, res) => {
     // Admin users can have multiple concurrent logins (configurable via .env)
     const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '7', 10);
     const cashierMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '1', 10);
-    const maxLogins = user.role === 'Admin' ? adminMaxLogins : cashierMaxLogins;
+    const captainMaxLogins = parseInt(process.env.CAPTAIN_MAX_CONCURRENT_LOGINS || '10', 10);
+    const maxLogins = user.role === 'Admin' ? adminMaxLogins : (user.role === 'Captain' ? captainMaxLogins : cashierMaxLogins);
 
     // Check if user has reached maximum concurrent login limit
     // This check is per-user, so different users can login simultaneously
@@ -241,13 +242,35 @@ export const updateProfile = async (req, res) => {
 export const register = async (req, res) => {
   const { username, password, role } = req.body;
   try {
-    const user = new User({ username, password, role });
+    const user = new User({ username, password, role: role || 'Cashier' });
     await user.save();
-    res.status(201).json({ message: 'User created successfully' });
+    res.status(201).json({ message: 'User created successfully', user: { id: user._id, username: user.username, role: user.role } });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({}, '-password');
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    if (req.params.id === req.user?.id) {
+      return res.status(400).json({ message: 'Cannot delete your own admin account.' });
+    }
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 
 // Create admin user (public if no admin exists, protected if admins exist)
 export const createAdmin = async (req, res) => {

@@ -6,6 +6,12 @@ const PaymentModal = ({ total, onClose, onComplete }) => {
   const [amountPaid, setAmountPaid] = useState(total);
   const [splitPayments, setSplitPayments] = useState({ cash: 0, upi: 0, card: 0 });
   const [upiApp, setUpiApp] = useState('PhonePe');
+  const [enableQrPayment] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem('restaurantSettings'));
+      return s?.enableQrPayment !== false;
+    } catch (e) { return true; }
+  });
 
   const balance = amountPaid - total;
   const mixedTotal = splitPayments.cash + splitPayments.upi + splitPayments.card;
@@ -99,21 +105,61 @@ const PaymentModal = ({ total, onClose, onComplete }) => {
 
           {mode === 'UPI' && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <label className="text-sm font-medium text-text-muted mb-2 block">Select UPI App</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['PhonePe', 'GPay', 'Paytm', 'Amazon Pay', 'BharatPe', 'Other'].map(app => (
-                  <button
-                    key={app}
-                    className={`py-2 rounded-xl border text-sm font-bold transition-all ${
-                      upiApp === app 
-                        ? 'bg-primary/10 border-primary text-primary' 
-                        : 'bg-background border-border text-text-muted hover:bg-surface-hover hover:text-text-main'
-                    }`}
-                    onClick={() => setUpiApp(app)}
-                  >
-                    {app}
-                  </button>
-                ))}
+              {enableQrPayment ? (
+                <div className="bg-background p-5 rounded-2xl border border-border flex flex-col items-center justify-center text-center shadow-inner relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 bg-primary/10 py-1 px-3 text-xs font-bold text-primary tracking-wide uppercase">
+                    Scan & Pay Instantly
+                  </div>
+                  
+                  <div className="bg-white p-3 rounded-2xl shadow-md border border-border/40 mt-5 mb-2 flex flex-col items-center">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent((() => {
+                        let pa = 'maheshsiva864@oksbi';
+                        let pn = 'MS Billings';
+                        try {
+                          const s = JSON.parse(localStorage.getItem('restaurantSettings'));
+                          if (s?.upiId && s.upiId !== 'msbillings@upi') pa = s.upiId.trim();
+                          if (s?.restaurantName) pn = s.restaurantName.trim();
+                        } catch (e) {}
+                        const am = Number(total || 0).toFixed(2);
+                        const tn = `Payment Rs ${am}`.replace(/[^a-zA-Z0-9 ]/g, '');
+                        const tr = `PAY${Date.now()}`;
+                        return `upi://pay?pa=${pa}&pn=${encodeURIComponent(pn)}&am=${am}&cu=INR&tn=${encodeURIComponent(tn)}&tr=${tr}`;
+                      })())}`} 
+                      alt="UPI QR Code" 
+                      className="w-40 h-40 object-contain"
+                    />
+                  </div>
+                  
+                  <div className="font-bold text-text-main text-base flex items-center gap-1.5">
+                    Amount Due: <span className="text-primary font-black text-lg">₹{total.toFixed(2)}</span>
+                  </div>
+                  <p className="text-[11px] text-text-muted mt-0.5 font-medium">Supports PhonePe, GPay, Paytm & all UPI apps</p>
+                </div>
+              ) : (
+                <div className="bg-background p-5 rounded-2xl border border-border text-center">
+                  <div className="font-bold text-text-main text-base mb-1">UPI Payment Due: ₹{total.toFixed(2)}</div>
+                  <p className="text-xs text-text-muted">Dynamic QR Code display is turned off in Settings.</p>
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-semibold text-text-muted mb-2 block uppercase tracking-wider">Record UPI App Used By Customer</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['PhonePe', 'GPay', 'Paytm', 'Amazon Pay', 'BharatPe', 'Other'].map(app => (
+                    <button
+                      key={app}
+                      className={`py-2 rounded-xl border text-sm font-bold transition-all ${
+                        upiApp === app 
+                          ? 'bg-primary/10 border-primary text-primary shadow-sm' 
+                          : 'bg-background border-border text-text-muted hover:bg-surface-hover hover:text-text-main'
+                      }`}
+                      onClick={() => setUpiApp(app)}
+                    >
+                      {app}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
