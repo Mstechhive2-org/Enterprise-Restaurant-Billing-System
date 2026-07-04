@@ -407,12 +407,19 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
     try {
       let currentId = orderId;
       
-      // Step 1: If order is not saved yet (no orderId), auto-save it first!
+      // Enforce golden restaurant rule: Dine-In tables MUST fire KOT and generate Bill first!
+      if (billType === 'Dine-In' && (!currentId || orderStatus === 'Open')) {
+        showToast('Please fire KOT and generate Bill first for Dine-In tables.', 'error');
+        setLoading(false);
+        return;
+      }
+      
+      // Step 1: For Delivery or Takeaway orders, auto-save if not saved yet
       if (!currentId) {
         let tableToUse = activeTable;
         if (!tableToUse) {
           const timestamp = Date.now().toString().slice(-6);
-          const prefix = billType === 'Delivery' ? 'DEL-' : billType === 'Takeaway' ? 'TAK-' : 'TBL-';
+          const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
           tableToUse = `${prefix}${timestamp}`;
           setActiveTable(tableToUse);
         }
@@ -431,7 +438,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
         setOrderId(savedOrder._id);
       }
 
-      // Step 2: If order is not yet Billed (e.g., status is Open or directly settling), auto-generate bill first!
+      // Step 2: For Delivery or Takeaway, auto-generate bill if not billed yet
       let currentBillNum = billNumber;
       let billDetails = completedBill;
       if (orderStatus !== 'Billed' && orderStatus !== 'Paid') {

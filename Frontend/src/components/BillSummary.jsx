@@ -288,16 +288,6 @@ const BillSummary = ({
           <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
             {orderStatus === 'Open' && (
               <>
-                {/* Direct Mobile Pay Option - #1 MOST PROMINENT BUTTON RIGHT UNDER TOTAL */}
-                <button 
-                  onClick={onSettleBill}
-                  disabled={cart.length === 0 || loading}
-                  className="col-span-2 sm:hidden flex items-center justify-center gap-2.5 py-4 px-4 rounded-2xl font-black text-base tracking-wide text-white bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 hover:from-emerald-700 hover:to-green-600 shadow-xl shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border-2 border-white/20 animate-pulse-subtle"
-                >
-                  <CheckCircle size={22} strokeWidth={2.5} />
-                  <span>PAY / SETTLE BILL (₹{total.toFixed(0)})</span>
-                </button>
-
                 <button 
                   onClick={onPrintKOT}
                   disabled={cart.length === 0 || loading}
