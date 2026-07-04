@@ -45,7 +45,7 @@ function App() {
   const isAdmin = userRole === 'Admin';
 
   useEffect(() => {
-    if (isCaptain && !['floor', 'orders', 'kothistory'].includes(view)) {
+    if (isCaptain && !['floor', 'orders', 'kothistory', 'billing'].includes(view)) {
       setView('floor');
     }
   }, [isCaptain, view]);
@@ -218,7 +218,7 @@ function App() {
       case 'dashboard': return 'Dashboard';
       case 'floor': return 'Floor Management';
       case 'orders': return 'Active Orders';
-      case 'billing': return 'Billing / POS';
+      case 'billing': return isCaptain ? 'Take Order / KOT Menu' : 'Billing / POS';
       case 'history': return 'Bill History';
       case 'kothistory': return 'KOT History';
       case 'analytics': return 'Analytics';

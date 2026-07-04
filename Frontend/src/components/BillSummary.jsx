@@ -285,7 +285,7 @@ const BillSummary = ({
           </div>
 
           {/* Action Buttons with pb-24 for mobile bottom nav clearance */}
-          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? 'grid-cols-2 lg:grid-cols-5' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')}`}>
+          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (billType === 'Delivery' && orderStatus === 'Open' ? (isCaptain ? 'grid-cols-2' : 'grid-cols-2 lg:grid-cols-3') : (isCaptain ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
             {orderStatus === 'Open' && (
               <>
                 <button 
@@ -297,6 +297,7 @@ const BillSummary = ({
                   <span>FIRE KOT</span>
                 </button>
                 
+                {!isCaptain && (
                 <button 
                   onClick={onGenerateBill}
                   disabled={cart.length === 0 || loading}
@@ -305,6 +306,7 @@ const BillSummary = ({
                   <FileText size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   <span>{loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}</span>
                 </button>
+                )}
 
                 {billType !== 'Delivery' && (
                   <button 
@@ -331,6 +333,7 @@ const BillSummary = ({
             {orderStatus === 'Billed' && (
               <>
                 {/* #1 MOST PROMINENT ACTION ON MOBILE: SETTLE BILL SPANS FULL WIDTH AT TOP */}
+                {!isCaptain && (
                 <button 
                   onClick={onSettleBill}
                   disabled={loading}
@@ -339,6 +342,7 @@ const BillSummary = ({
                   <CheckCircle size={22} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   <span>{loading ? 'WAIT' : `SETTLE BILL (₹${total.toFixed(0)})`}</span>
                 </button>
+                )}
 
                 <button 
                   onClick={onReopenOrder}
@@ -367,6 +371,7 @@ const BillSummary = ({
                   <span>KOT</span>
                 </button>
 
+                {!isCaptain && (
                 <button 
                   onClick={onPrintBill}
                   className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-2 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm active:scale-95"
@@ -375,6 +380,7 @@ const BillSummary = ({
                   <Printer size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   <span>PRINT</span>
                 </button>
+                )}
               </>
             )}
 
