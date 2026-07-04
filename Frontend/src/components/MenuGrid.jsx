@@ -131,18 +131,18 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
       </div>
       
       {/* Items Grid */}
-      <div className="flex-1 overflow-y-auto p-6 bg-background/50">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-6">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-background/50">
+        <div className="grid grid-cols-2 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 sm:gap-6">
           {filteredItems.map(item => (
             <div
               key={item._id}
-              className="bg-surface rounded-2xl p-5 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden flex flex-col h-full border border-border/50 hover:border-primary/20"
+              className="bg-surface rounded-xl sm:rounded-2xl p-3 sm:p-5 cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden flex flex-col h-full border border-border/50 hover:border-primary/20"
               onClick={() => onSelectItem(item)}
             >
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-[4rem] -mr-8 -mt-8 transition-transform group-hover:scale-110 pointer-events-none" />
 
               {formatImageUrl(item.image) && (
-                <div className="w-full h-36 mb-4 rounded-xl overflow-hidden relative shrink-0 bg-background/60 border border-border/40 shadow-sm">
+                <div className="w-full h-24 sm:h-36 mb-2 sm:mb-4 rounded-lg sm:rounded-xl overflow-hidden relative shrink-0 bg-background/60 border border-border/40 shadow-sm">
                   <img
                     src={formatImageUrl(item.image)}
                     alt={item.name}
@@ -156,18 +156,18 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
 
               <div className="flex flex-col h-full justify-between relative z-10">
                 <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-bold text-lg text-text-main leading-tight pr-2 group-hover:text-primary transition-colors">{item.name}</h3>
+                  <div className="flex justify-between items-start mb-1.5 sm:mb-3">
+                    <h3 className="font-bold text-xs sm:text-lg text-text-main leading-tight pr-1 sm:pr-2 group-hover:text-primary transition-colors line-clamp-2">{item.name}</h3>
                     {item.type && (
-                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1.5 ring-2 ring-white ${item.type === 'veg' ? 'bg-success' : 'bg-danger'}`} />
+                      <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 mt-1 ring-2 ring-white ${item.type === 'veg' ? 'bg-success' : 'bg-danger'}`} />
                     )}
                   </div>
-                  <p className="text-sm text-text-muted line-clamp-2 leading-relaxed mb-4">{item.description || item.category?.name}</p>
+                  <p className="text-[11px] sm:text-sm text-text-muted line-clamp-1 sm:line-clamp-2 leading-relaxed mb-2 sm:mb-4">{item.description || item.category?.name}</p>
                 </div>
 
-                <div className="flex items-center justify-between mt-auto pt-4 border-t border-dashed border-border/50">
-                  <span className="font-bold text-xl text-text-main">₹{item.price}</span>
-                  <button className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-lg shadow-primary/20 hover:scale-110 hover:bg-primary-hover transform translate-y-2 group-hover:translate-y-0">
+                <div className="flex items-center justify-between mt-auto pt-2 sm:pt-4 border-t border-dashed border-border/50">
+                  <span className="font-bold text-sm sm:text-xl text-text-main">₹{item.price}</span>
+                  <button className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-primary text-white flex items-center justify-center opacity-100 sm:opacity-0 group-hover:opacity-100 transition-all shadow-md sm:shadow-lg shadow-primary/20 hover:scale-110 hover:bg-primary-hover transform translate-y-0 sm:translate-y-2 group-hover:translate-y-0 text-sm sm:text-base">
                     +
                   </button>
                 </div>

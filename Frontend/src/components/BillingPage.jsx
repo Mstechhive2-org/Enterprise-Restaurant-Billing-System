@@ -651,7 +651,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
           )}
         </div>
 
-        <div className="flex-1 max-w-md mx-8">
+        <div className="flex-1 max-w-md mx-4 hidden md:block">
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={18} />
             <input 
@@ -676,40 +676,56 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
           
           <button 
             onClick={toggleFullScreen}
-            className="p-2 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
+            className="p-2 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-all hidden sm:block"
           >
             {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Tab Switcher */}
-      <div className="flex md:hidden px-3 pt-2 gap-2 shrink-0 bg-background border-b border-border/50 pb-2">
-        <button
-          onClick={() => setMobileTab('menu')}
-          className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
-            mobileTab === 'menu'
-              ? 'bg-primary text-white shadow-md'
-              : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
-          }`}
-        >
-          <span>🍽️ Menu Items</span>
-        </button>
-        <button
-          onClick={() => setMobileTab('cart')}
-          className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 relative ${
-            mobileTab === 'cart'
-              ? 'bg-primary text-white shadow-md'
-              : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
-          }`}
-        >
-          <span>🛒 Current Order</span>
-          {cart.length > 0 && (
-            <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
-              {cart.length}
-            </span>
-          )}
-        </button>
+      {/* Mobile Tab Switcher & Search */}
+      <div className="flex flex-col md:hidden px-3 pt-2 gap-2 shrink-0 bg-background border-b border-border/50 pb-2.5">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMobileTab('menu')}
+            className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+              mobileTab === 'menu'
+                ? 'bg-primary text-white shadow-md'
+                : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
+            }`}
+          >
+            <span>🍽️ Menu Items</span>
+          </button>
+          <button
+            onClick={() => setMobileTab('cart')}
+            className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 relative ${
+              mobileTab === 'cart'
+                ? 'bg-primary text-white shadow-md'
+                : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
+            }`}
+          >
+            <span>🛒 Current Order</span>
+            {cart.length > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
+                {cart.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Search Bar (Only shown when on Menu tab) */}
+        {mobileTab === 'menu' && (
+          <div className="relative group w-full mt-0.5">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search dishes, categories..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-primary text-xs text-text-main transition-all shadow-inner"
+            />
+          </div>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col overflow-hidden p-2 sm:p-4 gap-4">
