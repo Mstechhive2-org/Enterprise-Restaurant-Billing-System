@@ -593,12 +593,17 @@ function App() {
             )}
           </button>
 
-          {/* Center Giant Billing / POS Button */}
+          {/* Center POS Billing Button with explicit label */}
           <button
             onClick={() => handleViewChange('billing')}
-            className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-primary to-accent text-white w-14 h-14 rounded-full shadow-lg shadow-primary/30 border-4 border-background transition-transform active:scale-95"
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
+              view === 'billing' ? 'text-primary font-extrabold scale-105' : 'text-text-muted hover:text-text-main'
+            }`}
           >
-            <UtensilsCrossed size={24} />
+            <div className={`p-2.5 rounded-2xl transition-all flex items-center justify-center ${view === 'billing' ? 'bg-gradient-to-tr from-primary to-accent text-white shadow-xl shadow-primary/30 -mt-4 ring-4 ring-surface scale-110' : 'bg-primary/10 text-primary'}`}>
+              <UtensilsCrossed size={view === 'billing' ? 22 : 20} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[2.5]'} />
+            </div>
+            <span className={`text-[10px] tracking-tight ${view === 'billing' ? 'font-black text-primary -mt-0.5' : 'font-bold text-text-main'}`}>Billing</span>
           </button>
 
           <button

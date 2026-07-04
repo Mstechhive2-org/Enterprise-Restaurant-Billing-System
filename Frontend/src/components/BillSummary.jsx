@@ -284,14 +284,14 @@ const BillSummary = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
+          {/* Action Buttons with pb-24 for mobile bottom nav clearance */}
+          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
             {orderStatus === 'Open' && (
               <>
                 <button 
                   onClick={onPrintKOT}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
                 >
                   <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   FIRE KOT
@@ -299,7 +299,7 @@ const BillSummary = ({
                 <button 
                   onClick={onCancelOrder}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
                 >
                   <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   CANCEL
@@ -308,22 +308,32 @@ const BillSummary = ({
                   <button 
                     onClick={onSaveOrder}
                     disabled={loading || cart.length === 0}
-                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-primary bg-primary/10 sm:bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-primary bg-primary/10 sm:bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
                   >
                     <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                     {loading ? '...' : 'SAVE'}
                   </button>
                 )}
-                {!isCaptain && (
-                  <button 
-                    onClick={onGenerateBill}
-                    disabled={cart.length === 0 || loading}
-                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <FileText size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                    {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
-                  </button>
-                )}
+                
+                {/* On Mobile POS, always show BILL & DIRECT SETTLE/PAY so users never wonder where payment is */}
+                <button 
+                  onClick={onGenerateBill}
+                  disabled={cart.length === 0 || loading}
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                >
+                  <FileText size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
+                </button>
+
+                {/* Direct Mobile Pay Option */}
+                <button 
+                  onClick={onSettleBill}
+                  disabled={cart.length === 0 || loading}
+                  className="col-span-2 sm:hidden flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl font-black text-sm tracking-wide text-white bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 shadow-lg shadow-emerald-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                >
+                  <CheckCircle size={20} strokeWidth={2.5} />
+                  <span>PAY / SETTLE BILL (₹{total.toFixed(0)})</span>
+                </button>
               </>
             )}
 
@@ -331,7 +341,7 @@ const BillSummary = ({
               <>
                 <button 
                   onClick={onReopenOrder}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
                   disabled={loading}
                 >
                   <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
@@ -339,7 +349,7 @@ const BillSummary = ({
                 </button>
                 <button 
                   onClick={onCancelOrder}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
                   disabled={loading}
                 >
                   <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
@@ -347,37 +357,33 @@ const BillSummary = ({
                 </button>
                 <button 
                   onClick={onPrintKOT}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
                   disabled={loading}
                 >
                   <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   KOT
                 </button>
-                {!isCaptain && (
-                  <>
-                    <button 
-                      onClick={onPrintBill}
-                      className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm"
-                      disabled={loading}
-                    >
-                      <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                      PRINT
-                    </button>
-                    <button 
-                      onClick={onSettleBill}
-                      disabled={loading}
-                      className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-lg shadow-success/30 transition-all disabled:opacity-50"
-                    >
-                      <CheckCircle size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                      {loading ? 'WAIT' : 'SETTLE'}
-                    </button>
-                  </>
-                )}
+                <button 
+                  onClick={onPrintBill}
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm active:scale-95"
+                  disabled={loading}
+                >
+                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  PRINT
+                </button>
+                <button 
+                  onClick={onSettleBill}
+                  disabled={loading}
+                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 sm:gap-1 sm:flex-col py-3.5 sm:py-2 px-4 sm:px-1 rounded-xl font-black text-sm sm:text-[11px] tracking-wider text-white bg-gradient-to-r sm:bg-none sm:bg-success from-emerald-600 to-green-500 hover:bg-success-hover shadow-lg shadow-success/30 transition-all disabled:opacity-50 active:scale-95"
+                >
+                  <CheckCircle size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>{loading ? 'WAIT' : `SETTLE BILL (₹${total.toFixed(0)})`}</span>
+                </button>
               </>
             )}
 
         {orderStatus === 'Paid' && (
-          <div className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20">
+          <div className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20 pb-24 sm:pb-3">
             <CheckCircle size={18} />
             BILL SETTLED
           </div>
