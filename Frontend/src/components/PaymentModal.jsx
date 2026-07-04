@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, CheckCircle, Wallet, CreditCard, Banknote, PieChart } from 'lucide-react';
 
-const PaymentModal = ({ total, onClose, onComplete }) => {
+const PaymentModal = ({ total, billNumber, tableNo, onClose, onComplete }) => {
   const [mode, setMode] = useState('Cash');
   const [amountPaid, setAmountPaid] = useState(total);
   const [splitPayments, setSplitPayments] = useState({ cash: 0, upi: 0, card: 0 });
@@ -122,7 +122,8 @@ const PaymentModal = ({ total, onClose, onComplete }) => {
                           if (s?.restaurantName) pn = s.restaurantName.trim();
                         } catch (e) {}
                         const am = Number(total || 0).toFixed(2);
-                        const tn = `Payment Rs ${am}`.replace(/[^a-zA-Z0-9 ]/g, '');
+                        const noteText = billNumber ? `Bill #${billNumber} - Rs ${am}` : tableNo ? `Table ${tableNo} - Rs ${am}` : `Payment Rs ${am}`;
+                        const tn = noteText.replace(/[^a-zA-Z0-9 .#-]/g, '');
                         const tr = `PAY${Date.now()}`;
                         return `upi://pay?pa=${pa}&pn=${encodeURIComponent(pn)}&am=${am}&cu=INR&tn=${encodeURIComponent(tn)}&tr=${tr}`;
                       })())}`} 

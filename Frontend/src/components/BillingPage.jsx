@@ -405,7 +405,50 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
   const completeSettlement = async (paymentData) => {
     setLoading(true);
     try {
-      const settledOrder = await settleBill(orderId, { 
+      let currentId = orderId;
+      
+      // Step 1: If order is not saved yet (no orderId), auto-save it first!
+      if (!currentId) {
+        let tableToUse = activeTable;
+        if (!tableToUse) {
+          const timestamp = Date.now().toString().slice(-6);
+          const prefix = billType === 'Delivery' ? 'DEL-' : billType === 'Takeaway' ? 'TAK-' : 'TBL-';
+          tableToUse = `${prefix}${timestamp}`;
+          setActiveTable(tableToUse);
+        }
+        const orderData = {
+          tableNo: tableToUse,
+          items: cart,
+          subtotal,
+          tax: taxAmount,
+          discount: discountAmount,
+          total,
+          billType,
+          orderSource: billType === 'Delivery' ? orderSource : undefined
+        };
+        const savedOrder = await saveOrder(orderData);
+        currentId = savedOrder._id;
+        setOrderId(savedOrder._id);
+      }
+
+      // Step 2: If order is not yet Billed (e.g., status is Open or directly settling), auto-generate bill first!
+      let currentBillNum = billNumber;
+      let billDetails = completedBill;
+      if (orderStatus !== 'Billed' && orderStatus !== 'Paid') {
+        const billData = {
+          discount: discountAmount,
+          tax: taxVal
+        };
+        const billedOrder = await generateBill(currentId, billData);
+        setOrderStatus('Billed');
+        currentBillNum = billedOrder.billNumber;
+        setBillNumber(billedOrder.billNumber);
+        billDetails = billedOrder;
+        setCompletedBill(billedOrder);
+      }
+
+      // Step 3: Now settle the official bill!
+      const settledOrder = await settleBill(currentId, { 
         paymentMode: paymentData.mode,
         splitPayments: paymentData.splitPayments,
         upiApp: paymentData.upiApp
@@ -414,12 +457,13 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
       setShowPayment(false);
       
       // Update completed bill with paid status and all details
-      // The bill is now saved to billing history (status: 'Paid')
       setCompletedBill({ 
-        ...settledOrder, 
+        ...(billDetails || settledOrder), 
+        ...settledOrder,
         items: cart, // Ensure items are preserved
         status: 'Paid', // Explicitly set status
-        paymentMode: paymentData.mode // Ensure payment mode is set
+        paymentMode: paymentData.mode, // Ensure payment mode is set
+        billNumber: currentBillNum || settledOrder.billNumber
       });
       
       showToast('Bill Settled Successfully! Saved to billing history.', 'success');
@@ -797,6 +841,8 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
       {showPayment && (
         <PaymentModal 
           total={total} 
+          billNumber={billNumber}
+          tableNo={activeTable}
           onClose={() => setShowPayment(false)} 
           onComplete={handleSettleBill}
         />
