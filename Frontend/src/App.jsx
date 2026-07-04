@@ -196,10 +196,17 @@ function App() {
     }
   };
 
-  const userRole = user?.role || 'Admin';
+  const rawRole = user?.role || 'Admin';
+  const userRole = user?.username?.toLowerCase().includes('captain') ? 'Captain' : (user?.username?.toLowerCase().includes('cashier') ? 'Cashier' : rawRole);
   const isCaptain = userRole === 'Captain';
   const isCashier = userRole === 'Cashier';
   const isAdmin = userRole === 'Admin';
+
+  useEffect(() => {
+    if (isCaptain && !['floor', 'orders', 'kothistory'].includes(view)) {
+      setView('floor');
+    }
+  }, [isCaptain, view]);
 
   return (
     <div className="h-screen flex bg-background text-text-main font-sans overflow-hidden relative">
@@ -597,41 +604,47 @@ function App() {
             <span className="text-[11px] tracking-tight">KOTs</span>
           </button>
 
-          <button
-            onClick={() => handleViewChange('billing')}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-              view === 'billing' ? 'text-primary font-extrabold' : 'text-text-muted hover:text-text-main font-medium'
-            }`}
-          >
-            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'billing' ? 'bg-primary/15 text-primary scale-105 shadow-sm' : 'text-text-muted'}`}>
-              <UtensilsCrossed size={22} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-            </div>
-            <span className="text-[11px] tracking-tight font-black">Billing</span>
-          </button>
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('billing')}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+                view === 'billing' ? 'text-primary font-extrabold' : 'text-text-muted hover:text-text-main font-medium'
+              }`}
+            >
+              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'billing' ? 'bg-primary/15 text-primary scale-105 shadow-sm' : 'text-text-muted'}`}>
+                <UtensilsCrossed size={22} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+              </div>
+              <span className="text-[11px] tracking-tight font-black">Billing</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => handleViewChange('history')}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-              view === 'history' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
-            }`}
-          >
-            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'history' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
-              <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-            </div>
-            <span className="text-[11px] tracking-tight">History</span>
-          </button>
+          {!isCaptain && (
+            <button
+              onClick={() => handleViewChange('history')}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+                view === 'history' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
+              }`}
+            >
+              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'history' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+                <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+              </div>
+              <span className="text-[11px] tracking-tight">History</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-              ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
-            }`}
-          >
-            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
-              <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-            </div>
-            <span className="text-[11px] tracking-tight">More</span>
-          </button>
+          {!isCaptain && !isCashier && (
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+                ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
+              }`}
+            >
+              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+                <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+              </div>
+              <span className="text-[11px] tracking-tight">More</span>
+            </button>
+          )}
         </div>
       </div>
 
