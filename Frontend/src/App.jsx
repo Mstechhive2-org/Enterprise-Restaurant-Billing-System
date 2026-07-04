@@ -38,6 +38,18 @@ function App() {
   const [daysRemaining, setDaysRemaining] = useState(null);
   const [showExpiryPopup, setShowExpiryPopup] = useState(false);
 
+  const rawRole = user?.role || 'Admin';
+  const userRole = user?.username?.toLowerCase().includes('captain') ? 'Captain' : (user?.username?.toLowerCase().includes('cashier') ? 'Cashier' : rawRole);
+  const isCaptain = userRole === 'Captain';
+  const isCashier = userRole === 'Cashier';
+  const isAdmin = userRole === 'Admin';
+
+  useEffect(() => {
+    if (isCaptain && !['floor', 'orders', 'kothistory'].includes(view)) {
+      setView('floor');
+    }
+  }, [isCaptain, view]);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -195,18 +207,6 @@ function App() {
       default: return 'Restaurant Management';
     }
   };
-
-  const rawRole = user?.role || 'Admin';
-  const userRole = user?.username?.toLowerCase().includes('captain') ? 'Captain' : (user?.username?.toLowerCase().includes('cashier') ? 'Cashier' : rawRole);
-  const isCaptain = userRole === 'Captain';
-  const isCashier = userRole === 'Cashier';
-  const isAdmin = userRole === 'Admin';
-
-  useEffect(() => {
-    if (isCaptain && !['floor', 'orders', 'kothistory'].includes(view)) {
-      setView('floor');
-    }
-  }, [isCaptain, view]);
 
   return (
     <div className="h-screen flex bg-background text-text-main font-sans overflow-hidden relative">
