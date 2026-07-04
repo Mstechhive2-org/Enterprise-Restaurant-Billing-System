@@ -253,7 +253,7 @@ const LoginPage = ({ onLoginSuccess }) => {
                       try {
                         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
                         await fetch(`${API_BASE_URL}/config/reset`, { method: 'POST' });
-                        localStorage.removeItem('resto_hwid'); // Clear hardware ID
+                        // Keep 'resto_hwid' so the computer's unique hardware fingerprint remains unchanged!
                         localStorage.removeItem('resto_license'); // Clear license key memory
                         localStorage.removeItem('resto_license_expiry'); // Clear license expiry memory
                         localStorage.removeItem('user'); // Clear user session
