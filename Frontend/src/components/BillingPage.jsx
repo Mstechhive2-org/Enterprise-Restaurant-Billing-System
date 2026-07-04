@@ -599,7 +599,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
               <Menu size={20} />
             </button>
           )}
-          <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+          <div className="w-8 h-8 bg-primary text-white rounded-lg items-center justify-center shadow-lg shadow-primary/20 shrink-0 hidden sm:flex">
             <UtensilsCrossed size={18} />
           </div>
           <span className="tracking-tight hidden sm:inline">msbillings</span>
@@ -664,7 +664,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="items-center gap-6 hidden sm:flex">
           <div className="flex items-center gap-4 bg-background px-3 py-1.5 rounded-xl border border-border/50">
             <div className="flex flex-col items-end">
               <p className="text-[10px] text-text-muted font-bold uppercase tracking-wider flex items-center gap-1">
@@ -676,7 +676,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
           
           <button 
             onClick={toggleFullScreen}
-            className="p-2 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-all hidden sm:block"
+            className="p-2 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-all"
           >
             {isFullScreen ? <Minimize size={20} /> : <Maximize size={20} />}
           </button>
