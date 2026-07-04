@@ -55,6 +55,14 @@ const Settings = ({ user, setUser }) => {
     try {
       // Save restaurant settings to localStorage
       localStorage.setItem('restaurantSettings', JSON.stringify(settings));
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+        await fetch(`${API_BASE_URL}/config/info`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ restaurantSettings: settings })
+        });
+      } catch (e) {}
 
       // Dispatch custom event to notify other components
       window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: settings }));

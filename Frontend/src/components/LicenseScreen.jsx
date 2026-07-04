@@ -63,6 +63,14 @@ const LicenseScreen = ({ onValidLicense }) => {
 
         localStorage.setItem('resto_license', licenseKey.trim());
         localStorage.setItem('resto_license_expiry', data.validUntil);
+        try {
+          const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+          await fetch(`${API_BASE_URL}/config/info`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ licenseExpiry: data.validUntil })
+          });
+        } catch (e) {}
         onValidLicense();
       } else {
         setError(data.message || 'Invalid license key.');

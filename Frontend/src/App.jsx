@@ -61,18 +61,41 @@ function App() {
     }
     setLoading(false);
 
-    // Load license expiry (or default to 1 year if not set yet)
-    let expiryStr = localStorage.getItem('resto_license_expiry');
-    if (!expiryStr) {
-      const defaultExpiry = new Date();
-      defaultExpiry.setDate(defaultExpiry.getDate() + 365);
-      expiryStr = defaultExpiry.toISOString();
-      localStorage.setItem('resto_license_expiry', expiryStr);
-    }
-    const expiryDate = new Date(expiryStr);
-    if (!isNaN(expiryDate.getTime())) {
-      setLicenseExpiry(expiryDate);
-    }
+    // Sync license expiry and restaurant settings from Backend Database so ALL devices (Desktop & Mobile) match 100%!
+    const syncConfigFromBackend = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+        const res = await fetch(`${API_BASE_URL}/config/info`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.licenseExpiry) {
+            localStorage.setItem('resto_license_expiry', data.licenseExpiry);
+            const expiryDate = new Date(data.licenseExpiry);
+            if (!isNaN(expiryDate.getTime())) {
+              setLicenseExpiry(expiryDate);
+            }
+          }
+          if (data.restaurantSettings) {
+            localStorage.setItem('restaurantSettings', JSON.stringify(data.restaurantSettings));
+            setRestaurantName(data.restaurantSettings.restaurantName || 'msbillings');
+            document.title = `${data.restaurantSettings.restaurantName || 'msbillings'} - Restaurant Management`;
+          }
+          return;
+        }
+      } catch (err) {}
+      
+      // Fallback to localStorage or July 12, 2026 if offline/not synced yet
+      let expiryStr = localStorage.getItem('resto_license_expiry');
+      if (!expiryStr || expiryStr.includes('2027-')) {
+        expiryStr = '2026-07-12T23:59:59.000Z'; // Sync to exact Demo Expiry (8 days left)
+        localStorage.setItem('resto_license_expiry', expiryStr);
+      }
+      const expiryDate = new Date(expiryStr);
+      if (!isNaN(expiryDate.getTime())) {
+        setLicenseExpiry(expiryDate);
+      }
+    };
+    syncConfigFromBackend();
   }, []);
 
   // Calculate days remaining and auto-show popup
