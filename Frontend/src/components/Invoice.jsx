@@ -27,6 +27,8 @@ const Invoice = ({ bill, onClose, onSave }) => {
       const htmlContent = document.getElementById('invoice-print-area').outerHTML;
       const isSilent = settings.silentPrinting !== false;
       window.electronAPI.silentPrint(htmlContent, settings.billingPrinter, isSilent);
+    } else if (window.AndroidPrint && typeof window.AndroidPrint.print === 'function') {
+      window.AndroidPrint.print();
     } else {
       window.print();
     }
