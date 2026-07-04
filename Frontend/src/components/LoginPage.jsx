@@ -121,10 +121,10 @@ const LoginPage = ({ onLoginSuccess }) => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
               <Sparkles className="absolute -top-1 -right-1 text-yellow-400 animate-pulse" size={16} />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+            <h1 className="text-4xl font-black bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent mb-2 tracking-tight">
               msbillings
             </h1>
-            <p className="text-white/70 text-lg">
+            <p className="text-text-muted text-lg font-semibold">
               Premium Restaurant Management
             </p>
           </div>
