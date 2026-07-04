@@ -285,98 +285,103 @@ const BillSummary = ({
           </div>
 
           {/* Action Buttons with pb-24 for mobile bottom nav clearance */}
-          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
+          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 pb-24 sm:pb-4 ${orderStatus === 'Billed' ? 'grid-cols-2 lg:grid-cols-5' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')}`}>
             {orderStatus === 'Open' && (
               <>
                 <button 
                   onClick={onPrintKOT}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-3 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-white bg-gradient-to-r sm:bg-none sm:bg-orange-50 sm:text-orange-600 sm:border sm:border-orange-200 from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 sm:hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md sm:shadow-sm active:scale-95"
                 >
-                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  FIRE KOT
+                  <Printer size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>FIRE KOT</span>
                 </button>
                 
                 <button 
                   onClick={onGenerateBill}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-3 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-white bg-gradient-to-r from-primary to-accent hover:opacity-95 shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
                 >
-                  <FileText size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
+                  <FileText size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>{loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}</span>
                 </button>
 
                 {billType !== 'Delivery' && (
                   <button 
                     onClick={onSaveOrder}
                     disabled={loading || cart.length === 0}
-                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-primary bg-primary/10 sm:bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                    className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-3 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-blue-700 sm:text-primary bg-blue-50 sm:bg-primary/5 border-2 border-blue-200 sm:border-primary/20 hover:bg-blue-100 sm:hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
                   >
-                    <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                    {loading ? '...' : 'SAVE'}
+                    <Save size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                    <span>{loading ? '...' : 'SAVE'}</span>
                   </button>
                 )}
 
                 <button 
                   onClick={onCancelOrder}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95"
+                  className={`${billType === 'Delivery' ? 'col-span-2 sm:col-span-1' : ''} flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-3 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border-2 border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm active:scale-95`}
                 >
-                  <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  CANCEL
+                  <Trash2 size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>CANCEL</span>
                 </button>
               </>
             )}
 
             {orderStatus === 'Billed' && (
               <>
-                <button 
-                  onClick={onReopenOrder}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
-                  disabled={loading}
-                >
-                  <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  EDIT
-                </button>
-                <button 
-                  onClick={onCancelOrder}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
-                  disabled={loading}
-                >
-                  <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  CANCEL
-                </button>
-                <button 
-                  onClick={onPrintKOT}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
-                  disabled={loading}
-                >
-                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  KOT
-                </button>
-                <button 
-                  onClick={onPrintBill}
-                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm active:scale-95"
-                  disabled={loading}
-                >
-                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
-                  PRINT
-                </button>
+                {/* #1 MOST PROMINENT ACTION ON MOBILE: SETTLE BILL SPANS FULL WIDTH AT TOP */}
                 <button 
                   onClick={onSettleBill}
                   disabled={loading}
-                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 sm:gap-1 sm:flex-col py-3.5 sm:py-2 px-4 sm:px-1 rounded-xl font-black text-sm sm:text-[11px] tracking-wider text-white bg-gradient-to-r sm:bg-none sm:bg-success from-emerald-600 to-green-500 hover:bg-success-hover shadow-lg shadow-success/30 transition-all disabled:opacity-50 active:scale-95"
+                  className="col-span-2 sm:col-span-1 flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-4 sm:py-2 px-4 sm:px-1 rounded-2xl sm:rounded-xl font-black text-base sm:text-[11px] tracking-wider text-white bg-gradient-to-r sm:bg-none sm:bg-success from-emerald-600 via-green-500 to-emerald-600 hover:from-emerald-700 hover:to-green-600 sm:hover:bg-success-hover shadow-xl shadow-emerald-500/30 transition-all disabled:opacity-50 active:scale-95 border-2 border-white/20 sm:border-0 animate-pulse-subtle"
                 >
-                  <CheckCircle size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <CheckCircle size={22} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   <span>{loading ? 'WAIT' : `SETTLE BILL (₹${total.toFixed(0)})`}</span>
+                </button>
+
+                <button 
+                  onClick={onReopenOrder}
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-2 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
+                  disabled={loading}
+                >
+                  <Save size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>EDIT</span>
+                </button>
+
+                <button 
+                  onClick={onCancelOrder}
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-2 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
+                  disabled={loading}
+                >
+                  <Trash2 size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>CANCEL</span>
+                </button>
+
+                <button 
+                  onClick={onPrintKOT}
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-2 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 shadow-sm active:scale-95"
+                  disabled={loading}
+                >
+                  <Printer size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>KOT</span>
+                </button>
+
+                <button 
+                  onClick={onPrintBill}
+                  className="flex items-center justify-center gap-2 sm:flex-col sm:gap-1 py-3.5 sm:py-2 px-2 sm:px-1 rounded-xl font-black text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm active:scale-95"
+                  disabled={loading}
+                >
+                  <Printer size={18} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
+                  <span>PRINT</span>
                 </button>
               </>
             )}
 
         {orderStatus === 'Paid' && (
-          <div className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20 pb-24 sm:pb-3">
+          <div className="col-span-2 lg:col-span-5 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-success bg-success/10 border border-success/20 pb-24 sm:pb-3">
             <CheckCircle size={18} />
-            BILL SETTLED
+            <span>BILL SETTLED</span>
           </div>
         )}
       </div>

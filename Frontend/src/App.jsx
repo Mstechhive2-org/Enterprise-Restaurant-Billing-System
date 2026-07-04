@@ -566,64 +566,71 @@ function App() {
           </Suspense>
         </main>
 
-        {/* Native Android Bottom Navigation Bar (Mobile Only) */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface/95 backdrop-blur-lg border-t border-border/60 z-50 flex items-center justify-around px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {/* Native Android Bottom Navigation Bar (Google MD3 Style - Mobile Only) */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 min-h-[70px] pt-1.5 pb-2.5 bg-surface/98 backdrop-blur-xl border-t border-border/80 z-50 flex items-center justify-around px-2 shadow-[0_-4px_25px_rgba(0,0,0,0.1)]">
           <button
             onClick={() => handleViewChange('floor')}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
-              view === 'floor' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              view === 'floor' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
             }`}
           >
-            <LayoutGrid size={20} className={view === 'floor' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
-            <span className="text-[10px] tracking-tight">Tables</span>
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'floor' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <LayoutGrid size={20} className={view === 'floor' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight">Tables</span>
           </button>
 
           <button
             onClick={() => handleViewChange('orders')}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative ${
-              view === 'orders' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all relative ${
+              view === 'orders' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
             }`}
           >
-            <Clock size={20} className={view === 'orders' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
-            <span className="text-[10px] tracking-tight">KOTs</span>
-            {activeOrdersCount > 0 && (
-              <span className="absolute top-2.5 right-4 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
-                {activeOrdersCount}
-              </span>
-            )}
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center relative ${view === 'orders' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <Clock size={20} className={view === 'orders' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+              {activeOrdersCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
+                  {activeOrdersCount}
+                </span>
+              )}
+            </div>
+            <span className="text-[11px] tracking-tight">KOTs</span>
           </button>
 
-          {/* Center POS Billing Button with explicit label */}
           <button
             onClick={() => handleViewChange('billing')}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all ${
-              view === 'billing' ? 'text-primary font-extrabold scale-105' : 'text-text-muted hover:text-text-main'
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              view === 'billing' ? 'text-primary font-extrabold' : 'text-text-muted hover:text-text-main font-medium'
             }`}
           >
-            <div className={`p-2.5 rounded-2xl transition-all flex items-center justify-center ${view === 'billing' ? 'bg-gradient-to-tr from-primary to-accent text-white shadow-xl shadow-primary/30 -mt-4 ring-4 ring-surface scale-110' : 'bg-primary/10 text-primary'}`}>
-              <UtensilsCrossed size={view === 'billing' ? 22 : 20} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[2.5]'} />
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'billing' ? 'bg-primary/15 text-primary scale-105 shadow-sm' : 'text-text-muted'}`}>
+              <UtensilsCrossed size={22} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
             </div>
-            <span className={`text-[10px] tracking-tight ${view === 'billing' ? 'font-black text-primary -mt-0.5' : 'font-bold text-text-main'}`}>Billing</span>
+            <span className="text-[11px] tracking-tight font-black">Billing</span>
           </button>
 
           <button
             onClick={() => handleViewChange('history')}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
-              view === 'history' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              view === 'history' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
             }`}
           >
-            <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
-            <span className="text-[10px] tracking-tight">History</span>
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'history' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight">History</span>
           </button>
 
           <button
             onClick={() => setMobileMenuOpen(true)}
-            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
-              ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
             }`}
           >
-            <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
-            <span className="text-[10px] tracking-tight">More</span>
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight">More</span>
           </button>
         </div>
       </div>
