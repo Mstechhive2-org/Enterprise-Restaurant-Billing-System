@@ -104,7 +104,7 @@ const BillSummary = ({
 
 
       <div
-        className={`${billType === 'Delivery' ? 'flex-none hide-scrollbar' : 'flex-1'} overflow-y-auto p-4 space-y-2 bg-[url('https://www.transparenttextures.com/patterns/paper.png')]`}
+        className={`${billType === 'Delivery' ? 'flex-none hide-scrollbar' : 'flex-1'} overflow-y-auto p-2 sm:p-4 space-y-2 bg-background/30 sm:bg-[url('https://www.transparenttextures.com/patterns/paper.png')]`}
         style={billType === 'Delivery' ? {
           height: '17vh',
           minHeight: '100px'
@@ -119,31 +119,31 @@ const BillSummary = ({
           </div>
         ) : (
           cart.map(item => (
-            <div key={item._id || item.name} className="flex items-center justify-between group p-3 hover:bg-background/50 rounded-lg transition-colors border-b border-dashed border-border/30 last:border-0">
-              <div className="flex-1">
-                <h4 className="font-bold text-text-main text-sm font-mono">{item.name}</h4>
+            <div key={item._id || item.name} className="flex items-center justify-between group p-3 sm:p-3 bg-surface sm:bg-transparent hover:bg-background/50 rounded-xl transition-colors border sm:border-0 border-border/50 sm:border-b sm:border-dashed sm:border-border/30 last:border-0 shadow-xs sm:shadow-none mb-1.5 sm:mb-0">
+              <div className="flex-1 pr-2">
+                <h4 className="font-bold text-text-main text-sm sm:text-sm font-mono">{item.name}</h4>
                 <p className="text-xs text-text-muted font-mono">@ ₹{item.price}</p>
               </div>
 
-              <div className="flex items-center gap-3 bg-background rounded border border-border px-2 py-1 mx-4 shadow-sm">
+              <div className="flex items-center gap-2 sm:gap-3 bg-background rounded-xl sm:rounded border border-border px-2 py-1.5 sm:px-2 sm:py-1 mx-2 sm:mx-4 shadow-sm">
                 <button
                   onClick={() => updateQuantity(item._id || item.name, -1)}
                   disabled={isLocked || loading}
-                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-danger hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded-lg sm:rounded hover:bg-danger hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface sm:bg-transparent shadow-sm sm:shadow-none"
                 >
-                  {item.quantity === 1 ? <Trash2 size={12} /> : <Minus size={12} />}
+                  {item.quantity === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
                 </button>
-                <span className="text-sm font-bold w-6 text-center font-mono">{item.quantity}</span>
+                <span className="text-sm sm:text-sm font-bold w-6 text-center font-mono">{item.quantity}</span>
                 <button
                   onClick={() => updateQuantity(item._id || item.name, 1)}
                   disabled={isLocked || loading}
-                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-success hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-8 h-8 sm:w-5 sm:h-5 flex items-center justify-center rounded-lg sm:rounded hover:bg-success hover:text-white text-text-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-surface sm:bg-transparent shadow-sm sm:shadow-none"
                 >
-                  <Plus size={12} />
+                  <Plus size={14} />
                 </button>
               </div>
 
-              <div className="font-bold text-text-main w-16 text-right font-mono">
+              <div className="font-bold text-text-main text-base sm:text-sm w-16 sm:w-16 text-right font-mono">
                 ₹{item.price * item.quantity}
               </div>
             </div>
@@ -285,32 +285,32 @@ const BillSummary = ({
           </div>
 
           {/* Action Buttons */}
-          <div className={`grid gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
+          <div className={`grid gap-2.5 sm:gap-3 mt-4 mb-4 ${orderStatus === 'Billed' ? (isCaptain ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-5') : (isCaptain ? 'grid-cols-3' : (billType === 'Delivery' && orderStatus === 'Open' ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'))}`}>
             {orderStatus === 'Open' && (
               <>
                 <button 
                   onClick={onPrintKOT}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
-                  <Printer size={18} strokeWidth={2.5} />
+                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   FIRE KOT
                 </button>
                 <button 
                   onClick={onCancelOrder}
                   disabled={cart.length === 0 || loading}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                 >
-                  <Trash2 size={18} strokeWidth={2.5} />
+                  <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   CANCEL
                 </button>
                 {billType !== 'Delivery' && (
                   <button 
                     onClick={onSaveOrder}
                     disabled={loading || cart.length === 0}
-                    className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-primary bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-primary bg-primary/10 sm:bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   >
-                    <Save size={18} strokeWidth={2.5} />
+                    <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                     {loading ? '...' : 'SAVE'}
                   </button>
                 )}
@@ -318,9 +318,9 @@ const BillSummary = ({
                   <button 
                     onClick={onGenerateBill}
                     disabled={cart.length === 0 || loading}
-                    className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-md shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <FileText size={18} strokeWidth={2.5} />
+                    <FileText size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                     {loading ? 'WAIT' : billType === 'Delivery' ? 'MAKE BILL' : 'BILL'}
                   </button>
                 )}
@@ -331,44 +331,44 @@ const BillSummary = ({
               <>
                 <button 
                   onClick={onReopenOrder}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-blue-600 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-all disabled:opacity-50 shadow-sm"
                   disabled={loading}
                 >
-                  <Save size={18} strokeWidth={2.5} />
+                  <Save size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   EDIT
                 </button>
                 <button 
                   onClick={onCancelOrder}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all disabled:opacity-50 shadow-sm"
                   disabled={loading}
                 >
-                  <Trash2 size={18} strokeWidth={2.5} />
+                  <Trash2 size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   CANCEL
                 </button>
                 <button 
                   onClick={onPrintKOT}
-                  className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50"
+                  className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-all disabled:opacity-50 shadow-sm"
                   disabled={loading}
                 >
-                  <Printer size={18} strokeWidth={2.5} />
+                  <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                   KOT
                 </button>
                 {!isCaptain && (
                   <>
                     <button 
                       onClick={onPrintBill}
-                      className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50"
+                      className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-text-main border border-border hover:bg-surface transition-all disabled:opacity-50 shadow-sm"
                       disabled={loading}
                     >
-                      <Printer size={18} strokeWidth={2.5} />
+                      <Printer size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                       PRINT
                     </button>
                     <button 
                       onClick={onSettleBill}
                       disabled={loading}
-                      className="flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl font-bold text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-md shadow-success/20 transition-all disabled:opacity-50"
+                      className="flex flex-col items-center justify-center gap-1.5 sm:gap-1 py-3 sm:py-2 px-2 sm:px-1 rounded-xl font-extrabold text-xs sm:text-[11px] tracking-wider text-white bg-success hover:bg-success-hover shadow-lg shadow-success/30 transition-all disabled:opacity-50"
                     >
-                      <CheckCircle size={18} strokeWidth={2.5} />
+                      <CheckCircle size={20} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.5} />
                       {loading ? 'WAIT' : 'SETTLE'}
                     </button>
                   </>

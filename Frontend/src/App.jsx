@@ -15,7 +15,7 @@ const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 const DayBook = React.lazy(() => import('./components/DayBook'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu, Receipt, Clock } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
@@ -477,7 +477,7 @@ function App() {
           </header>
         )}
 
-        <main className="flex-1 overflow-hidden p-6">
+        <main className="flex-1 overflow-hidden p-2 sm:p-6 pb-18 md:pb-6">
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-4">
@@ -565,6 +565,62 @@ function App() {
             )}
           </Suspense>
         </main>
+
+        {/* Native Android Bottom Navigation Bar (Mobile Only) */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface/95 backdrop-blur-lg border-t border-border/60 z-50 flex items-center justify-around px-1 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <button
+            onClick={() => handleViewChange('floor')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+              view === 'floor' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            }`}
+          >
+            <LayoutGrid size={20} className={view === 'floor' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
+            <span className="text-[10px] tracking-tight">Tables</span>
+          </button>
+
+          <button
+            onClick={() => handleViewChange('orders')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative ${
+              view === 'orders' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            }`}
+          >
+            <Clock size={20} className={view === 'orders' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
+            <span className="text-[10px] tracking-tight">KOTs</span>
+            {activeOrdersCount > 0 && (
+              <span className="absolute top-2.5 right-4 bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                {activeOrdersCount}
+              </span>
+            )}
+          </button>
+
+          {/* Center Giant Billing / POS Button */}
+          <button
+            onClick={() => handleViewChange('billing')}
+            className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-primary to-accent text-white w-14 h-14 rounded-full shadow-lg shadow-primary/30 border-4 border-background transition-transform active:scale-95"
+          >
+            <UtensilsCrossed size={24} />
+          </button>
+
+          <button
+            onClick={() => handleViewChange('history')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+              view === 'history' ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            }`}
+          >
+            <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
+            <span className="text-[10px] tracking-tight">History</span>
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all ${
+              ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold scale-105' : 'text-text-muted hover:text-text-main'
+            }`}
+          >
+            <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.5]'} />
+            <span className="text-[10px] tracking-tight">More</span>
+          </button>
+        </div>
       </div>
 
       {/* License Expiry Warning Popup */}
