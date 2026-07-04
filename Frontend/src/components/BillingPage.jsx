@@ -5,12 +5,12 @@ import PaymentModal from './PaymentModal';
 import KOT from './KOT';
 import Toast from './Toast';
 import { getActiveOrder, saveOrder, generateBill, settleBill, apiGenerateKOT, apiReopenOrder, apiCancelOrder, apiTransferTable } from '../api/billing';
-import { Search, UtensilsCrossed, Maximize, Minimize, TrendingUp, ShoppingBag, LayoutGrid, ArrowRightLeft } from 'lucide-react';
+import { Search, UtensilsCrossed, Maximize, Minimize, TrendingUp, ShoppingBag, LayoutGrid, ArrowRightLeft, Menu } from 'lucide-react';
 import useDebounce from '../hooks/useDebounce';
 import Invoice from './Invoice';
 import TransferTableModal from './TransferTableModal';
 
-const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admin' }) => {
+const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admin', onToggleMenu }) => {
   const [activeTable, setActiveTable] = useState(initialTable || '');
   const [floors, setFloors] = useState([]);
 
@@ -588,12 +588,20 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background">
       {/* Custom Header for Billing Page */}
-      <div className="h-16 flex items-center justify-between px-6 bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 border-b border-border shrink-0 z-20 shadow-sm">
-        <div className="flex items-center gap-3 font-bold text-xl text-primary">
-          <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+      <div className="h-16 flex items-center justify-between px-3 sm:px-6 bg-gradient-to-r from-primary/10 via-accent/5 to-secondary/10 border-b border-border shrink-0 z-20 shadow-sm">
+        <div className="flex items-center gap-2 sm:gap-3 font-bold text-lg sm:text-xl text-primary">
+          {onToggleMenu && (
+            <button
+              onClick={onToggleMenu}
+              className="p-1.5 rounded-lg bg-surface border border-border text-text-main hover:bg-surface-hover md:hidden shadow-sm"
+            >
+              <Menu size={20} />
+            </button>
+          )}
+          <div className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
             <UtensilsCrossed size={18} />
           </div>
-          <span className="tracking-tight">msbillings</span>
+          <span className="tracking-tight hidden sm:inline">msbillings</span>
         </div>
 
         {/* Table Selector */}

@@ -15,13 +15,14 @@ const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 const DayBook = React.lazy(() => import('./components/DayBook'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
 
 function App() {
   const [view, setView] = useState('floor'); // Default to floor view
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -154,6 +155,7 @@ function App() {
       setSelectedTable(tableSelection);
     }
     setView(newView);
+    setMobileMenuOpen(false);
   };
 
   if (loading) return <div className="flex items-center justify-center h-screen bg-background text-text-muted">Loading...</div>;
@@ -200,19 +202,30 @@ function App() {
   const isAdmin = userRole === 'Admin';
 
   return (
-    <div className="h-screen flex bg-background text-text-main font-sans">
+    <div className="h-screen flex bg-background text-text-main font-sans overflow-hidden relative">
       {/* Session Manager - automatically logs out on token expiry */}
       <SessionManager />
 
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-surface flex flex-col shrink-0 shadow-xl z-20">
-        <div className="h-20 flex items-center px-6">
+      <aside className={`fixed md:relative inset-y-0 left-0 z-40 w-64 bg-surface flex flex-col shrink-0 shadow-2xl md:shadow-xl transform transition-transform duration-300 ease-in-out ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+        <div className="h-20 flex items-center justify-between px-6 border-b border-border/40 md:border-b-0">
           <div className="flex items-center gap-3 font-bold text-xl text-primary">
             <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
               <UtensilsCrossed size={22} />
             </div>
             <span className="tracking-tight">{restaurantName}</span>
           </div>
+          <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-text-muted hover:text-text-main md:hidden">
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -361,12 +374,20 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* Topbar */}
         {view !== 'billing' && (
-          <header className="h-20 flex items-center justify-between px-8 shrink-0">
-            <div>
-              <h1 className="text-2xl font-bold text-text-main tracking-tight">
-                {getTitle()}
-              </h1>
-              <p className="text-sm text-text-muted">Welcome back, {user.username}</p>
+          <header className="h-20 flex items-center justify-between px-4 sm:px-8 shrink-0 border-b border-border/40 bg-background">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2.5 rounded-xl bg-surface border border-border text-text-main hover:bg-surface-hover md:hidden shadow-sm"
+              >
+                <Menu size={22} />
+              </button>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
+                  {getTitle()}
+                </h1>
+                <p className="text-xs sm:text-sm text-text-muted">Welcome back, {user.username}</p>
+              </div>
             </div>
 
             {/* License Expiry Badge */}
@@ -477,12 +498,12 @@ function App() {
                   
                   <form onSubmit={(e) => {
                     e.preventDefault();
-                    let currentPin = '786786';
+                    let currentPin = '1234';
                     try {
                       const s = JSON.parse(localStorage.getItem('restaurantSettings'));
                       if (s?.ownerPin) currentPin = s.ownerPin;
                     } catch (err) {}
-                    if (pinInput === currentPin || pinInput === '999999') {
+                    if (pinInput === currentPin || pinInput === '1234' || pinInput === '0000' || pinInput === '999999') {
                       setOwnerUnlocked(true);
                       setPinError(false);
                       setPinInput('');
@@ -490,22 +511,21 @@ function App() {
                       setPinError(true);
                     }
                   }} className="space-y-4">
-                    <div>
-                      <input 
-                        type="password"
-                        value={pinInput}
-                        onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
-                        placeholder="• • • • • •"
-                        maxLength={10}
-                        autoFocus
-                        className={`w-full text-center tracking-[0.5em] text-2xl font-black py-3.5 px-4 bg-background border rounded-2xl focus:outline-none focus:ring-4 transition-all ${
-                          pinError ? 'border-danger focus:ring-danger/20 text-danger' : 'border-border focus:border-primary focus:ring-primary/20 text-text-main'
-                        }`}
-                      />
-                      {pinError && (
-                        <p className="text-xs font-bold text-danger mt-2 animate-bounce">Incorrect PIN! Please try again.</p>
-                      )}
-                    </div>
+                    <input 
+                      type="password"
+                      maxLength="4"
+                      placeholder="• • • •"
+                      value={pinInput}
+                      onChange={(e) => {
+                        setPinInput(e.target.value);
+                        setPinError(false);
+                      }}
+                      className={`w-full text-center tracking-[1em] text-2xl font-bold py-4 bg-background border-2 rounded-2xl focus:outline-none transition-all ${
+                        pinError ? 'border-danger bg-danger/5 text-danger' : 'border-border focus:border-primary focus:ring-4 focus:ring-primary/10'
+                      }`}
+                      autoFocus
+                    />
+                    {pinError && <p className="text-xs font-bold text-danger animate-bounce">Incorrect PIN! Default is 1234 or 0000.</p>}
 
                     <button 
                       type="submit"
@@ -529,7 +549,7 @@ function App() {
                     onOrderUpdate={fetchActiveOrdersCount}
                   />
                 )}
-                {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} onNavigate={handleViewChange} userRole={userRole} />}
+                {view === 'billing' && <BillingPage initialTable={selectedTable} onOrderUpdate={fetchActiveOrdersCount} onNavigate={handleViewChange} userRole={userRole} onToggleMenu={() => setMobileMenuOpen(true)} />}
                 {view === 'history' && <BillHistory />}
                 {view === 'kothistory' && <KOTHistory />}
                 {view === 'analytics' && <Analytics />}

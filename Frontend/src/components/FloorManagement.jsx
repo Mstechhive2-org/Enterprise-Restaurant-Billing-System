@@ -160,17 +160,17 @@ const FloorManagement = ({ onNavigate }) => {
       <div 
         key={item.id} 
         onClick={() => handleSpaceClick(uniqueSpaceName)}
-        className={`group relative flex flex-col justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 ${
+        className={`group relative flex flex-col justify-between p-3.5 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer shadow-sm hover:shadow-lg hover:-translate-y-1 ${
           isOccupied 
             ? 'bg-orange-50/80 border-orange-200 hover:border-orange-400' 
             : 'bg-emerald-50/80 border-emerald-200 hover:border-emerald-400'
         }`}
       >
-        <div className="flex justify-between items-start mb-4">
-          <div className={`p-2.5 rounded-xl ${isOccupied ? 'bg-orange-200/50 text-orange-600' : 'bg-emerald-200/50 text-emerald-600'}`}>
-            <IconComponent size={24} />
+        <div className="flex justify-between items-start mb-3 sm:mb-4">
+          <div className={`p-2 sm:p-2.5 rounded-xl ${isOccupied ? 'bg-orange-200/50 text-orange-600' : 'bg-emerald-200/50 text-emerald-600'}`}>
+            <IconComponent size={20} className="sm:w-6 sm:h-6" />
           </div>
-          <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
+          <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider ${
             isOccupied ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'
           }`}>
             {isOccupied ? 'Occupied' : 'Free'}
@@ -178,15 +178,15 @@ const FloorManagement = ({ onNavigate }) => {
         </div>
 
         <div>
-          <h3 className="text-lg font-bold text-text-main mb-1">{item.name}</h3>
+          <h3 className="text-base sm:text-lg font-bold text-text-main mb-1 truncate">{item.name}</h3>
           {isOccupied ? (
-            <div className="flex items-center gap-2 text-sm text-orange-700 font-semibold">
-              <Clock size={14} />
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-orange-700 font-semibold">
+              <Clock size={13} className="sm:w-3.5 sm:h-3.5" />
               <span>₹{activeOrder.total.toLocaleString()}</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
-              <CheckCircle size={14} />
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-emerald-600 font-medium">
+              <CheckCircle size={13} className="sm:w-3.5 sm:h-3.5" />
               <span>Available</span>
             </div>
           )}
@@ -244,7 +244,7 @@ const FloorManagement = ({ onNavigate }) => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-8">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8">
         
         {/* Tables Section */}
         <section>
@@ -257,7 +257,7 @@ const FloorManagement = ({ onNavigate }) => {
               <Plus size={16} /> Add Table
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {floors.find(f => f.id === activeFloorId)?.tables?.map(table => renderSpaceCard(table, 'table', Coffee))}
           </div>
         </section>
@@ -273,7 +273,7 @@ const FloorManagement = ({ onNavigate }) => {
               <Plus size={16} /> Add Cabin
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {floors.find(f => f.id === activeFloorId)?.cabins?.map(cabin => renderSpaceCard(cabin, 'cabin', Home))}
           </div>
         </section>
@@ -289,7 +289,7 @@ const FloorManagement = ({ onNavigate }) => {
               <Plus size={16} /> Add Sofa
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {floors.find(f => f.id === activeFloorId)?.sofas?.map(sofa => renderSpaceCard(sofa, 'sofa', Sofa))}
           </div>
         </section>
