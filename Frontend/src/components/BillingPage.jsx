@@ -59,6 +59,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
           </select>
         </div>
   const [cart, setCart] = useState([]);
+  const [mobileTab, setMobileTab] = useState('menu'); // 'menu' or 'cart'
   const [orderId, setOrderId] = useState(null);
   const [orderStatus, setOrderStatus] = useState('Open'); // Open, Billed, Paid
   const [billNumber, setBillNumber] = useState(null);
@@ -682,15 +683,48 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden p-4 gap-4">
-        <div className="flex-1 grid grid-cols-[1fr_400px] gap-4 overflow-hidden">
+      {/* Mobile Tab Switcher */}
+      <div className="flex md:hidden px-3 pt-2 gap-2 shrink-0 bg-background border-b border-border/50 pb-2">
+        <button
+          onClick={() => setMobileTab('menu')}
+          className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === 'menu'
+              ? 'bg-primary text-white shadow-md'
+              : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
+          }`}
+        >
+          <span>🍽️ Menu Items</span>
+        </button>
+        <button
+          onClick={() => setMobileTab('cart')}
+          className={`flex-1 py-2 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 relative ${
+            mobileTab === 'cart'
+              ? 'bg-primary text-white shadow-md'
+              : 'bg-surface text-text-muted border border-border hover:bg-surface-hover'
+          }`}
+        >
+          <span>🛒 Current Order</span>
+          {cart.length > 0 && (
+            <span className="bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">
+              {cart.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="flex-1 flex flex-col overflow-hidden p-2 sm:p-4 gap-4">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_380px] lg:grid-cols-[1fr_400px] gap-4 overflow-hidden">
           {/* Left Panel: Menu */}
-          <div className="flex flex-col overflow-hidden bg-surface rounded-2xl shadow-sm border border-border/50">
+          <div className={`flex flex-col overflow-hidden bg-surface rounded-2xl shadow-sm border border-border/50 ${
+            mobileTab === 'cart' ? 'hidden md:flex' : 'flex'
+          }`}>
             <MenuGrid onSelectItem={addToCart} searchTerm={debouncedSearchTerm} />
           </div>
 
           {/* Right Panel: Summary */}
-          <div className="flex flex-col overflow-hidden rounded-2xl shadow-xl shadow-primary/5 ring-1 ring-black/5 bg-surface">
+          <div className={`flex flex-col overflow-hidden rounded-2xl shadow-xl shadow-primary/5 ring-1 ring-black/5 bg-surface ${
+            mobileTab === 'menu' ? 'hidden md:flex' : 'flex'
+          }`}>
             <BillSummary
               cart={cart}
               updateQuantity={updateQuantity}
@@ -725,6 +759,23 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
             />
           </div>
         </div>
+
+        {/* Mobile Floating Cart Bar */}
+        {cart.length > 0 && mobileTab === 'menu' && (
+          <div className="md:hidden p-3 bg-surface border border-border rounded-2xl shadow-xl flex items-center justify-between shrink-0 animate-bounce-short">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-text-muted font-bold uppercase">Total ({cart.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
+              <span className="text-base font-black text-primary">₹{total.toFixed(2)}</span>
+            </div>
+            <button
+              onClick={() => setMobileTab('cart')}
+              className="px-4 py-2 bg-primary text-white rounded-xl font-bold text-xs shadow-md shadow-primary/20 hover:bg-primary-hover flex items-center gap-2"
+            >
+              <span>View Order</span>
+              <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">➔</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {showPayment && (

@@ -374,19 +374,19 @@ function App() {
       <div className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* Topbar */}
         {view !== 'billing' && (
-          <header className="h-20 flex items-center justify-between px-4 sm:px-8 shrink-0 border-b border-border/40 bg-background">
-            <div className="flex items-center gap-3">
+          <header className="h-20 flex items-center justify-between px-3 sm:px-8 shrink-0 border-b border-border/40 bg-background gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-2.5 rounded-xl bg-surface border border-border text-text-main hover:bg-surface-hover md:hidden shadow-sm"
+                className="p-2 sm:p-2.5 rounded-xl bg-surface border border-border text-text-main hover:bg-surface-hover md:hidden shadow-sm shrink-0"
               >
-                <Menu size={22} />
+                <Menu size={20} className="sm:w-[22px] sm:h-[22px]" />
               </button>
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-text-main tracking-tight">
+              <div className="min-w-0 truncate">
+                <h1 className="text-base sm:text-2xl font-bold text-text-main tracking-tight truncate">
                   {getTitle()}
                 </h1>
-                <p className="text-xs sm:text-sm text-text-muted">Welcome back, {user.username}</p>
+                <p className="text-[11px] sm:text-sm text-text-muted hidden sm:block truncate">Welcome back, {user.username}</p>
               </div>
             </div>
 
@@ -394,7 +394,7 @@ function App() {
             {daysRemaining !== null && (
               <button
                 onClick={() => setShowExpiryPopup(true)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer ${
+                className={`flex items-center gap-1 sm:gap-2 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0 ${
                   daysRemaining <= 0
                     ? 'bg-red-500/15 text-red-600 border border-red-500/30 animate-pulse'
                     : daysRemaining <= 15
@@ -403,37 +403,40 @@ function App() {
                 }`}
               >
                 <CalendarClock size={14} />
-                <span>
+                <span className="hidden sm:inline">
                   {daysRemaining <= 0
                     ? 'License Expired!'
                     : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left`}
                 </span>
+                <span className="sm:hidden text-[11px]">
+                  {daysRemaining <= 0 ? 'Expired' : `${daysRemaining}d`}
+                </span>
                 {licenseExpiry && (
-                  <span className="opacity-60 hidden sm:inline">
+                  <span className="opacity-60 hidden md:inline">
                     (Exp: {licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })})
                   </span>
                 )}
               </button>
             )}
 
-            <div className="flex items-center gap-4 relative">
+            <div className="flex items-center gap-2 sm:gap-4 relative shrink-0">
               {['dashboard', 'analytics', 'daybook'].includes(view) && ownerUnlocked && (
                 <button
                   onClick={() => setOwnerUnlocked(false)}
-                  className="flex items-center gap-2 px-3.5 py-2 bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded-xl text-xs font-bold hover:bg-amber-500/20 transition-all shadow-sm"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded-xl text-xs font-bold hover:bg-amber-500/20 transition-all shadow-sm"
                 >
                   <Lock size={14} />
-                  <span>Lock Reports</span>
+                  <span className="hidden sm:inline">Lock Reports</span>
                 </button>
               )}
               <button 
                 onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-3 px-2 py-1.5 bg-surface rounded-full shadow-sm pr-4 hover:bg-surface-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                className="flex items-center gap-2 sm:gap-3 p-1 sm:px-2 sm:py-1.5 bg-surface rounded-full shadow-sm sm:pr-4 hover:bg-surface-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
               >
-                <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-md">
-                  <User size={20} />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-md shrink-0">
+                  <User size={18} className="sm:w-5 sm:h-5" />
                 </div>
-                <div className="flex flex-col leading-none text-left">
+                <div className="hidden sm:flex flex-col leading-none text-left">
                   <span className="text-sm font-bold text-text-main">{user.username}</span>
                   <span className="text-[10px] text-text-muted uppercase tracking-wider font-bold">{user.role}</span>
                 </div>

@@ -451,13 +451,13 @@ const MenuManagement = ({ user }) => {
   if (loading) return <div className="flex items-center justify-center h-full text-text-muted">Loading...</div>;
 
   return (
-    <div className="h-full flex flex-col bg-background p-6">
-      <div className="flex justify-between items-center mb-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-border/50">
+    <div className="h-full flex flex-col bg-background p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-border/50">
         <div>
-          <h1 className="text-2xl font-bold text-text-main">Menu Management</h1>
-          <p className="text-text-muted">Manage your restaurant's menu items and categories</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-main">Menu Management</h1>
+          <p className="text-xs sm:text-sm text-text-muted">Manage your restaurant's menu items and categories</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
           <input
             type="file"
             accept=".csv"

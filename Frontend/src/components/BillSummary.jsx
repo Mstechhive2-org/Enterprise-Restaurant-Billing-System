@@ -64,10 +64,10 @@ const BillSummary = ({
       {/* Receipt Top Edge */}
       <div className="absolute top-0 left-0 right-0 h-2 bg-[radial-gradient(circle,transparent_50%,#ffffff_50%)] bg-[length:16px_16px] -mt-2 rotate-180"></div>
 
-      <div className="p-4 border-b-2 border-dashed border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 z-10 flex justify-between items-center">
-        <div>
-          <h2 className="text-sm font-bold text-text-main font-mono tracking-tight">CURRENT ORDER</h2>
-          <div className="flex items-center gap-2 text-[10px] text-text-muted mt-0.5 font-mono">
+      <div className="p-3 sm:p-4 border-b-2 border-dashed border-border/50 bg-gradient-to-r from-primary/5 to-accent/5 z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+        <div className="w-full sm:w-auto flex justify-between sm:block items-center">
+          <h2 className="text-xs sm:text-sm font-bold text-text-main font-mono tracking-tight">CURRENT ORDER</h2>
+          <div className="flex items-center gap-2 text-[10px] text-text-muted mt-0 sm:mt-0.5 font-mono">
             <span className="font-bold text-primary">{activeTable}</span>
             <span className={`px-1.5 py-0.5 rounded-full text-[9px] uppercase tracking-wider font-bold ${orderStatus === 'Open' ? 'bg-blue-100 text-blue-700' :
                 orderStatus === 'Billed' ? 'bg-orange-100 text-orange-700' :
@@ -77,23 +77,23 @@ const BillSummary = ({
             </span>
           </div>
         </div>
-        <div className="flex bg-background p-0.5 rounded-lg border border-border">
+        <div className="flex bg-background p-0.5 rounded-lg border border-border w-full sm:w-auto justify-between">
           <button
-            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${billType === 'Dine-In' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
+            className={`flex-1 sm:flex-initial px-2 py-1 rounded-md text-[10px] font-bold transition-all text-center ${billType === 'Dine-In' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
             onClick={() => !isLocked && setBillType('Dine-In')}
             disabled={isLocked || loading}
           >
             Dine-In
           </button>
           <button
-            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${billType === 'Takeaway' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
+            className={`flex-1 sm:flex-initial px-2 py-1 rounded-md text-[10px] font-bold transition-all text-center ${billType === 'Takeaway' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
             onClick={() => !isLocked && setBillType('Takeaway')}
             disabled={isLocked || loading}
           >
             Takeaway
           </button>
           <button
-            className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${billType === 'Delivery' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
+            className={`flex-1 sm:flex-initial px-2 py-1 rounded-md text-[10px] font-bold transition-all text-center ${billType === 'Delivery' ? 'bg-primary text-white shadow-md' : 'text-text-muted hover:text-text-main'}`}
             onClick={() => !isLocked && setBillType('Delivery')}
             disabled={isLocked || loading}
           >

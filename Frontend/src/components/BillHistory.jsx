@@ -167,31 +167,31 @@ const BillHistory = () => {
   );
 
   return (
-    <div className="h-full flex flex-col bg-background p-6">
-      <div className="flex justify-between items-center mb-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-border/50">
+    <div className="h-full flex flex-col bg-background p-3 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 p-4 bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl border border-border/50">
         <div>
-          <h1 className="text-2xl font-bold text-text-main">Transaction History</h1>
-          <p className="text-text-muted">View and manage past transactions</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-text-main">Transaction History</h1>
+          <p className="text-xs sm:text-sm text-text-muted">View and manage past transactions</p>
         </div>
         
-        <div className="flex gap-4">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <input
               type="text"
               placeholder="Search Bill #..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-primary text-text-main w-64"
+              className="pl-10 pr-4 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-primary text-text-main w-full"
             />
           </div>
 
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" size={18} />
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="pl-10 pr-8 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-primary text-text-main appearance-none cursor-pointer"
+              className="w-full sm:w-auto pl-10 pr-8 py-2 bg-surface border border-border rounded-xl focus:outline-none focus:border-primary text-text-main appearance-none cursor-pointer"
             >
               <option value="All">All</option>
               <option value="Dine-In">Dine-In</option>
