@@ -71,7 +71,7 @@ api.interceptors.response.use(
     // Handle 401 (Unauthorized) - Session invalid/expired -> Logout immediately
     if (error.response?.status === 401) {
       // Don't reload if the request was to the login endpoint, just pass the error
-      if (originalRequest.url !== '/auth/login') {
+      if (!originalRequest.url?.includes('/auth/login')) {
         console.warn('401 Unauthorized - Logging out user');
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');

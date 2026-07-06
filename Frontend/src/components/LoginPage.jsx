@@ -25,7 +25,7 @@ const LoginPage = ({ onLoginSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-white">
+    <div className="min-h-screen flex relative overflow-x-hidden overflow-y-auto bg-white">
       {/* Left Side - Premium Restaurant Image */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden">
         {/* Background Image */}
@@ -93,7 +93,7 @@ const LoginPage = ({ onLoginSuccess }) => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 lg:w-[30%] flex items-center justify-center p-6 lg:p-8 bg-white relative overflow-hidden">
+      <div className="flex-1 lg:w-[30%] flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-white relative overflow-y-auto min-h-screen lg:min-h-0 py-10">
         {/* Creative Background Pattern */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Subtle geometric pattern */}
