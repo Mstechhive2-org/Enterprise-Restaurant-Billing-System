@@ -38,16 +38,20 @@ const FloorManagement = ({ onNavigate }) => {
 
   const [activeFloorId, setActiveFloorId] = useState(() => floors[0]?.id || null);
 
-  useEffect(() => {
-    localStorage.setItem('msbillings_spaces', JSON.stringify(floors));
+  const saveSpacesToCloud = (newFloors) => {
+    localStorage.setItem('msbillings_spaces', JSON.stringify(newFloors));
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
       fetch(`${API_BASE_URL}/config/info`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spaces: floors })
+        body: JSON.stringify({ spaces: newFloors })
       }).catch(() => {});
     } catch (e) {}
+  };
+
+  useEffect(() => {
+    localStorage.setItem('msbillings_spaces', JSON.stringify(floors));
   }, [floors]);
 
   useEffect(() => {
@@ -108,7 +112,11 @@ const FloorManagement = ({ onNavigate }) => {
       onConfirm: (name) => {
         if (name && name.trim() !== '') {
           const newFloorId = Date.now().toString();
-          setFloors(prev => [...prev, { id: newFloorId, name: name.trim(), tables: [], cabins: [], sofas: [] }]);
+          setFloors(prev => {
+            const next = [...prev, { id: newFloorId, name: name.trim(), tables: [], cabins: [], sofas: [] }];
+            saveSpacesToCloud(next);
+            return next;
+          });
           setActiveFloorId(newFloorId);
           setToast({ message: 'Floor added successfully!', type: 'success' });
         }
@@ -128,6 +136,7 @@ const FloorManagement = ({ onNavigate }) => {
           if (activeFloorId === id) {
             setActiveFloorId(nextFloors[0]?.id || null);
           }
+          saveSpacesToCloud(nextFloors);
           return nextFloors;
         });
       }
@@ -143,16 +152,20 @@ const FloorManagement = ({ onNavigate }) => {
       placeholder: `Enter name for new ${type}`,
       onConfirm: (name) => {
         if (name && name.trim() !== '') {
-          setFloors(prev => prev.map(floor => {
-            if (floor.id === activeFloorId) {
-              const key = type + 's';
-              return {
-                ...floor,
-                [key]: [...(floor[key] || []), { id: Date.now().toString(), name: name.trim() }]
-              };
-            }
-            return floor;
-          }));
+          setFloors(prev => {
+            const next = prev.map(floor => {
+              if (floor.id === activeFloorId) {
+                const key = type + 's';
+                return {
+                  ...floor,
+                  [key]: [...(floor[key] || []), { id: Date.now().toString(), name: name.trim() }]
+                };
+              }
+              return floor;
+            });
+            saveSpacesToCloud(next);
+            return next;
+          });
           setToast({ message: `${type} added successfully!`, type: 'success' });
         }
       }
@@ -166,16 +179,20 @@ const FloorManagement = ({ onNavigate }) => {
       title: `Remove ${type.charAt(0).toUpperCase() + type.slice(1)}`,
       message: `Are you sure you want to remove this ${type}?`,
       onConfirm: () => {
-        setFloors(prev => prev.map(floor => {
-          if (floor.id === activeFloorId) {
-            const key = type + 's';
-            return {
-              ...floor,
-              [key]: floor[key].filter(item => item.id !== id)
-            };
-          }
-          return floor;
-        }));
+        setFloors(prev => {
+          const next = prev.map(floor => {
+            if (floor.id === activeFloorId) {
+              const key = type + 's';
+              return {
+                ...floor,
+                [key]: floor[key].filter(item => item.id !== id)
+              };
+            }
+            return floor;
+          });
+          saveSpacesToCloud(next);
+          return next;
+        });
       }
     });
   };

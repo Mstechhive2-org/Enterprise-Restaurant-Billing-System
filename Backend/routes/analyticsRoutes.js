@@ -6,11 +6,11 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 // GET analytics - Admin users only
 router.get('/', authenticateToken, requireAdmin, getAnalytics);
 
-// GET DayBook - Admin users only
-router.get('/daybook', authenticateToken, requireAdmin, getDayBook);
+// GET DayBook - Available to Cashier & Admin
+router.get('/daybook', authenticateToken, getDayBook);
 
-// Export DayBook - Admin users only
-router.get('/daybook/export', authenticateToken, requireAdmin, exportDayBookExcel);
+// Export DayBook - Available to Cashier & Admin
+router.get('/daybook/export', authenticateToken, exportDayBookExcel);
 
 // Download reports - Admin users only
 router.get('/download/daily/csv', authenticateToken, requireAdmin, downloadDailyReportCSV);
