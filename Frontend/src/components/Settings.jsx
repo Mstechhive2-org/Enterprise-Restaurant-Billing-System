@@ -164,7 +164,7 @@ const Settings = ({ user, setUser }) => {
                     <FileText className="text-primary" size={20} />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-text-main">Desktop Printers <span className="text-sm font-normal text-primary">(v1.4.4)</span></h2>
+                    <h2 className="text-xl font-bold text-text-main">Desktop Printers <span className="text-sm font-normal text-primary">(v1.4.5)</span></h2>
                     <p className="text-xs text-text-muted mt-0.5">Configure auto-printing</p>
                   </div>
                 </div>
