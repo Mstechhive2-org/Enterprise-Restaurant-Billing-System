@@ -4,7 +4,7 @@ import BillSummary from './BillSummary';
 import PaymentModal from './PaymentModal';
 import KOT from './KOT';
 import Toast from './Toast';
-import { getActiveOrder, saveOrder, generateBill, settleBill, apiGenerateKOT, apiReopenOrder, apiCancelOrder, apiTransferTable } from '../api/billing';
+import { getActiveOrder, saveOrder, generateBill, settleBill, apiGenerateKOT, apiReopenOrder, apiCancelOrder, apiTransferTable, getOpenOrders } from '../api/billing';
 import { Search, UtensilsCrossed, Maximize, Minimize, TrendingUp, ShoppingBag, LayoutGrid, ArrowRightLeft, Menu } from 'lucide-react';
 import useDebounce from '../hooks/useDebounce';
 import Invoice from './Invoice';
@@ -13,6 +13,22 @@ import TransferTableModal from './TransferTableModal';
 const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admin', onToggleMenu }) => {
   const [activeTable, setActiveTable] = useState(initialTable || '');
   const [floors, setFloors] = useState([]);
+  const [openOrdersList, setOpenOrdersList] = useState([]);
+
+  useEffect(() => {
+    fetchOpenOrdersList();
+    const interval = setInterval(fetchOpenOrdersList, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchOpenOrdersList = async () => {
+    try {
+      const data = await getOpenOrders();
+      setOpenOrdersList(data || []);
+    } catch (e) {
+      console.error('Error fetching open orders list:', e);
+    }
+  };
 
   useEffect(() => {
     const loadSpaces = () => {
@@ -129,17 +145,22 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
     }
   }, [initialTable]);
 
-  // Auto-generate delivery/takeaway order number when Delivery or Takeaway is selected
+  // Auto-select existing or generate delivery/takeaway order number when Delivery or Takeaway is selected
   useEffect(() => {
     if ((billType === 'Delivery' || billType === 'Takeaway') && (!activeTable || !activeTable.startsWith(billType === 'Delivery' ? 'DEL-' : 'TAK-'))) {
-      const timestamp = Date.now().toString().slice(-6);
       const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
-      const generatedOrderNo = `${prefix}${timestamp}`;
-      setActiveTable(generatedOrderNo);
+      const existingOrder = openOrdersList.find(o => o.tableNo?.startsWith(prefix) && (o.status === 'Open' || o.status === 'Billed'));
+      if (existingOrder && !initialTable) {
+        setActiveTable(existingOrder.tableNo);
+      } else {
+        const timestamp = Date.now().toString().slice(-6);
+        const generatedOrderNo = `${prefix}${timestamp}`;
+        setActiveTable(generatedOrderNo);
+      }
     } else if (billType === 'Dine-In' && activeTable && (activeTable.startsWith('DEL-') || activeTable.startsWith('TAK-'))) {
       setActiveTable('');
     }
-  }, [billType]);
+  }, [billType, openOrdersList]);
 
   // Fetch active order when table changes
   useEffect(() => {
@@ -698,9 +719,34 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
         <div className="flex items-center gap-2 bg-background border border-border rounded-xl px-3 py-1.5">
           <LayoutGrid size={16} className="text-text-muted" />
           {(billType === 'Delivery' || billType === 'Takeaway') ? (
-            <div className="font-bold text-text-main text-sm">
-              {activeTable || (billType === 'Delivery' ? 'DEL-XXXXXX' : 'TAK-XXXXXX')}
-            </div>
+            <select 
+              value={activeTable} 
+              onChange={(e) => {
+                if (e.target.value === 'NEW_ORDER') {
+                  const timestamp = Date.now().toString().slice(-6);
+                  const prefix = billType === 'Delivery' ? 'DEL-' : 'TAK-';
+                  setActiveTable(`${prefix}${timestamp}`);
+                } else {
+                  setActiveTable(e.target.value);
+                }
+              }}
+              className="bg-transparent font-bold text-text-main focus:outline-none text-sm cursor-pointer"
+            >
+              <option value="NEW_ORDER" className="bg-surface text-primary font-bold">+ New {billType} Order</option>
+              {openOrdersList
+                .filter(o => o.tableNo?.startsWith(billType === 'Delivery' ? 'DEL-' : 'TAK-'))
+                .map(o => (
+                  <option key={o._id} value={o.tableNo} className="bg-surface text-white">
+                    {o.tableNo} ({o.status} - ₹{o.total || 0})
+                  </option>
+                ))
+              }
+              {activeTable && !openOrdersList.some(o => o.tableNo === activeTable) && (
+                <option value={activeTable} className="bg-surface text-white">
+                  {activeTable} (New/Current)
+                </option>
+              )}
+            </select>
           ) : (
             <select 
               value={activeTable} 
