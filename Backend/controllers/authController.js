@@ -42,12 +42,10 @@ export const login = async (req, res) => {
     });
 
     // Determine max concurrent logins from environment variables
-    // Default: Admin = 7 (multiple logins allowed), Cashier = 1 (single login only)
-    // Cashier users can only login from one device at a time
-    // Admin users can have multiple concurrent logins (configurable via .env)
-    const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '7', 10);
-    const cashierMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '1', 10);
-    const captainMaxLogins = parseInt(process.env.CAPTAIN_MAX_CONCURRENT_LOGINS || '10', 10);
+    // Default: Unlimited (99999) for all roles so permanent accounts can login from ANY device simultaneously!
+    const adminMaxLogins = parseInt(process.env.ADMIN_MAX_CONCURRENT_LOGINS || '99999', 10);
+    const cashierMaxLogins = parseInt(process.env.CUSTOMER_MAX_CONCURRENT_LOGINS || '99999', 10);
+    const captainMaxLogins = parseInt(process.env.CAPTAIN_MAX_CONCURRENT_LOGINS || '99999', 10);
     const maxLogins = user.role === 'Admin' ? adminMaxLogins : (user.role === 'Captain' ? captainMaxLogins : cashierMaxLogins);
 
     // Check if user has reached maximum concurrent login limit

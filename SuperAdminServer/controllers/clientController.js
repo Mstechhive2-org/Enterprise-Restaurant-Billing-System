@@ -161,12 +161,12 @@ export const validateLicense = async (req, res) => {
     }
 
     // Hardware ID Binding
+    // Allow permanent/lifetime accounts (like Maheer Restaurant) to be used on ANY device/computer without restriction!
     if (!client.hardwareId) {
-      // First time activation! Bind to this computer.
       client.hardwareId = hardwareId;
       await client.save();
-    } else if (client.hardwareId !== hardwareId) {
-      // Trying to use on a different computer! Block it.
+    } else if (client.hardwareId !== hardwareId && client.plan !== 'Lifetime Premium' && !client.licenseKey.includes('MAH')) {
+      // Trying to use on a different computer! Block it only if not a permanent/lifetime license.
       return res.status(403).json({ valid: false, message: 'License is already bound to another computer. Contact support.' });
     }
 

@@ -15,20 +15,24 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
   const [floors, setFloors] = useState([]);
 
   useEffect(() => {
-    const savedSpaces = localStorage.getItem('msbillings_spaces');
-    if (savedSpaces) {
-      let parsed = JSON.parse(savedSpaces);
-      if (!Array.isArray(parsed)) {
-        parsed = [{
-          id: 'f-default',
-          name: 'Ground Floor',
-          tables: parsed.tables || [],
-          cabins: parsed.cabins || [],
-          sofas: parsed.sofas || []
-        }];
+    const loadSpaces = () => {
+      const savedSpaces = localStorage.getItem('msbillings_spaces');
+      if (savedSpaces) {
+        try {
+          let parsed = JSON.parse(savedSpaces);
+          if (!Array.isArray(parsed)) {
+            parsed = [{
+              id: 'f-default',
+              name: 'Ground Floor',
+              tables: parsed.tables || [],
+              cabins: parsed.cabins || [],
+              sofas: parsed.sofas || []
+            }];
+          }
+          setFloors(parsed);
+          return;
+        } catch (e) {}
       }
-      setFloors(parsed);
-    } else {
       setFloors([{
         id: 'f-1',
         name: 'Ground Floor',
@@ -36,7 +40,27 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
         cabins: [{ id: 'c1', name: 'Cabin 1' }, { id: 'c2', name: 'Cabin 2' }],
         sofas: [{ id: 's1', name: 'Sofa 1' }]
       }]);
-    }
+    };
+
+    loadSpaces();
+
+    const syncSpacesFromBackend = async () => {
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+        const res = await fetch(`${API_BASE_URL}/config/info`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.spaces && Array.isArray(data.spaces) && data.spaces.length > 0) {
+            localStorage.setItem('msbillings_spaces', JSON.stringify(data.spaces));
+            setFloors(data.spaces);
+          }
+        }
+      } catch (e) {}
+    };
+    syncSpacesFromBackend();
+
+    window.addEventListener('spacesUpdated', loadSpaces);
+    return () => window.removeEventListener('spacesUpdated', loadSpaces);
   }, []);
   // ... (rest of state)
 
@@ -64,7 +88,7 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
   const [orderStatus, setOrderStatus] = useState('Open'); // Open, Billed, Paid
   const [billNumber, setBillNumber] = useState(null);
   
-  const [billType, setBillType] = useState(initialTable && initialTable.startsWith('DEL-') ? 'Delivery' : 'Dine-In');
+  const [billType, setBillType] = useState(initialTable ? (initialTable.startsWith('DEL-') ? 'Delivery' : (initialTable.startsWith('TAK-') ? 'Takeaway' : 'Dine-In')) : 'Dine-In');
   const [taxRate, setTaxRate] = useState(''); 
   const [discount, setDiscount] = useState({ type: 'percentage', value: '' });
   
@@ -90,6 +114,20 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
   const [loading, setLoading] = useState(false);
   
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  // Sync when initialTable changes from parent (e.g. clicking an order in Active Orders)
+  useEffect(() => {
+    if (initialTable) {
+      setActiveTable(initialTable);
+      if (initialTable.startsWith('DEL-')) {
+        setBillType('Delivery');
+      } else if (initialTable.startsWith('TAK-')) {
+        setBillType('Takeaway');
+      } else {
+        setBillType('Dine-In');
+      }
+    }
+  }, [initialTable]);
 
   // Auto-generate delivery/takeaway order number when Delivery or Takeaway is selected
   useEffect(() => {

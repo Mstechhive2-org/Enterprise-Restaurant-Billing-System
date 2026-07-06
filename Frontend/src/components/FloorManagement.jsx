@@ -40,13 +40,53 @@ const FloorManagement = ({ onNavigate }) => {
 
   useEffect(() => {
     localStorage.setItem('msbillings_spaces', JSON.stringify(floors));
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+      fetch(`${API_BASE_URL}/config/info`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spaces: floors })
+      }).catch(() => {});
+    } catch (e) {}
   }, [floors]);
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 10000);
-    return () => clearInterval(interval);
+    syncSpaces();
+    const interval = setInterval(() => {
+      fetchOrders();
+      syncSpaces();
+    }, 10000);
+    
+    const handleSpacesUpdated = () => {
+      const saved = localStorage.getItem('msbillings_spaces');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) setFloors(parsed);
+        } catch (e) {}
+      }
+    };
+    window.addEventListener('spacesUpdated', handleSpacesUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('spacesUpdated', handleSpacesUpdated);
+    };
   }, []);
+
+  const syncSpaces = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+      const res = await fetch(`${API_BASE_URL}/config/info`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.spaces && Array.isArray(data.spaces) && data.spaces.length > 0) {
+          localStorage.setItem('msbillings_spaces', JSON.stringify(data.spaces));
+          setFloors(data.spaces);
+        }
+      }
+    } catch (e) {}
+  };
 
   const fetchOrders = async () => {
     try {

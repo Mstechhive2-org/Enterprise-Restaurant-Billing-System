@@ -79,6 +79,7 @@ export const getRestaurantInfo = async (req, res) => {
   try {
     const expiryDoc = await Setting.findOne({ key: 'licenseExpiry' });
     const settingsDoc = await Setting.findOne({ key: 'restaurantSettings' });
+    const spacesDoc = await Setting.findOne({ key: 'spaces' });
     
     // Default to July 12, 2026 (Demo Expiry) if not set in DB
     const licenseExpiry = expiryDoc?.value || '2026-07-12T23:59:59.000Z';
@@ -92,7 +93,9 @@ export const getRestaurantInfo = async (req, res) => {
       gstin: '36ABCDE1234F1Z5'
     };
 
-    res.status(200).json({ licenseExpiry, restaurantSettings });
+    const spaces = spacesDoc?.value || null;
+
+    res.status(200).json({ licenseExpiry, restaurantSettings, spaces });
   } catch (error) {
     res.status(500).json({ message: 'Error fetching config', error: error.message });
   }
@@ -100,12 +103,15 @@ export const getRestaurantInfo = async (req, res) => {
 
 export const updateRestaurantInfo = async (req, res) => {
   try {
-    const { licenseExpiry, restaurantSettings } = req.body;
+    const { licenseExpiry, restaurantSettings, spaces } = req.body;
     if (licenseExpiry) {
       await Setting.findOneAndUpdate({ key: 'licenseExpiry' }, { value: licenseExpiry }, { upsert: true });
     }
     if (restaurantSettings) {
       await Setting.findOneAndUpdate({ key: 'restaurantSettings' }, { value: restaurantSettings }, { upsert: true });
+    }
+    if (spaces) {
+      await Setting.findOneAndUpdate({ key: 'spaces' }, { value: spaces }, { upsert: true });
     }
     res.status(200).json({ message: 'Updated successfully' });
   } catch (error) {

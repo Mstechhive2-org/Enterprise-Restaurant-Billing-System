@@ -80,6 +80,10 @@ function App() {
             setRestaurantName(data.restaurantSettings.restaurantName || 'msbillings');
             document.title = `${data.restaurantSettings.restaurantName || 'msbillings'} - Restaurant Management`;
           }
+          if (data.spaces) {
+            localStorage.setItem('msbillings_spaces', JSON.stringify(data.spaces));
+            window.dispatchEvent(new Event('spacesUpdated'));
+          }
           return;
         }
       } catch (err) {}
