@@ -236,23 +236,23 @@ const Dashboard = ({ onNavigate }) => {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="max-w-7xl mx-auto p-6 space-y-5">
+      <div className="max-w-7xl mx-auto p-3 sm:p-6 space-y-4 sm:space-y-5">
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary/5 via-accent/3 to-secondary/5 rounded-xl p-4 border border-border/50 shadow-sm">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary/5 via-accent/3 to-secondary/5 rounded-xl p-3 sm:p-4 border border-border/50 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <h1 className="text-xl font-bold text-text-main mb-0.5">Today's Dashboard</h1>
-              <p className="text-xs text-text-muted font-medium">{formatDate(currentDate)}</p>
+              <h1 className="text-base sm:text-xl font-bold text-text-main mb-0.5">Today's Dashboard</h1>
+              <p className="text-[10px] sm:text-xs text-text-muted font-medium">{formatDate(currentDate)}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button
                 onClick={() => onNavigate && onNavigate('billing')}
-                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg text-xs sm:text-sm"
               >
-                <LayoutDashboard size={16} />
-                <span className="text-sm">Quick Billing</span>
+                <LayoutDashboard size={14} className="sm:w-4 sm:h-4" />
+                <span>Quick Billing</span>
               </button>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-border/50">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-surface rounded-lg border border-border/50">
                 <Clock size={16} className="text-primary" />
                 <span className="text-base font-mono font-bold text-text-main">{formatTime(currentDate)}</span>
               </div>
@@ -261,82 +261,82 @@ const Dashboard = ({ onNavigate }) => {
         </div>
 
         {/* Main Stats Cards */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
           {/* Revenue Card */}
-          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-5 border border-success/20 shadow-sm hover:shadow-lg hover:border-success/30 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-success/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="text-success" size={20} />
+          <div className="bg-gradient-to-br from-success/10 to-success/5 rounded-xl p-3 sm:p-5 border border-success/20 shadow-sm hover:shadow-lg hover:border-success/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-success/20 rounded-lg flex items-center justify-center">
+                <DollarSign className="text-success" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Today's Revenue</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.sales)}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Revenue</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.sales)}</p>
             </div>
           </div>
 
           {/* Dine-In Orders Card */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 border border-primary/20 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-primary/20 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="text-primary" size={20} />
+          <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-3 sm:p-5 border border-primary/20 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/20 rounded-lg flex items-center justify-center">
+                <ShoppingBag className="text-primary" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Dine-In Orders</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{stats.dineInOrders}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Dine-In</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{stats.dineInOrders}</p>
             </div>
           </div>
 
           {/* Takeaway Orders Card */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
-                <Package className="text-secondary" size={20} />
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-3 sm:p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
+                <Package className="text-secondary" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Takeaway Orders</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{stats.takeawayOrders}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Takeaway</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{stats.takeawayOrders}</p>
             </div>
           </div>
 
           {/* Average Order Value */}
-          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-5 border border-accent/20 shadow-sm hover:shadow-lg hover:border-accent/30 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-accent/20 rounded-lg flex items-center justify-center">
-                <TrendingUp className="text-accent" size={20} />
+          <div className="bg-gradient-to-br from-accent/10 to-accent/5 rounded-xl p-3 sm:p-5 border border-accent/20 shadow-sm hover:shadow-lg hover:border-accent/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-accent/20 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-accent" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Avg Order Value</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.averageOrderValue)}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Avg Order</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{formatCurrency(stats.averageOrderValue)}</p>
             </div>
           </div>
 
           {/* Active Orders */}
-          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
-                <Activity className="text-secondary" size={20} />
+          <div className="bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-xl p-3 sm:p-5 border border-secondary/20 shadow-sm hover:shadow-lg hover:border-secondary/30 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-secondary/20 rounded-lg flex items-center justify-center">
+                <Activity className="text-secondary" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Active Orders</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{stats.activeOrders}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Active</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{stats.activeOrders}</p>
             </div>
           </div>
 
           {/* Delivery Orders */}
-          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-5 border border-orange-200/50 shadow-sm hover:shadow-lg hover:border-orange-300/50 transition-all duration-300">
-            <div className="flex items-center justify-between mb-3">
-              <div className="w-10 h-10 bg-orange-200/50 rounded-lg flex items-center justify-center">
-                <Truck className="text-orange-600" size={20} />
+          <div className="bg-gradient-to-br from-orange-100/50 to-orange-50/30 rounded-xl p-3 sm:p-5 border border-orange-200/50 shadow-sm hover:shadow-lg hover:border-orange-300/50 transition-all duration-300">
+            <div className="flex items-center justify-between mb-2 sm:mb-3">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-orange-200/50 rounded-lg flex items-center justify-center">
+                <Truck className="text-orange-600" size={18} />
               </div>
             </div>
-            <div className="space-y-1">
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">Delivery Orders</p>
-              <p className="text-2xl font-bold text-text-main leading-tight">{stats.deliveryOrders || 0}</p>
+            <div className="space-y-0.5 sm:space-y-1">
+              <p className="text-[10px] sm:text-xs font-semibold text-text-muted uppercase tracking-wide">Delivery</p>
+              <p className="text-lg sm:text-2xl font-bold text-text-main leading-tight">{stats.deliveryOrders || 0}</p>
             </div>
           </div>
         </div>

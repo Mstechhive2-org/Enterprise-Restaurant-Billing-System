@@ -511,7 +511,7 @@ function App() {
           </header>
         )}
 
-        <main className="flex-1 overflow-hidden p-2 sm:p-6 pb-18 md:pb-6">
+        <main className="flex-1 overflow-hidden p-2 sm:p-6 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-6">
           <Suspense fallback={
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-4">
@@ -548,21 +548,23 @@ function App() {
                       setPinError(true);
                     }
                   }} className="space-y-4">
-                    <input 
-                      type="password"
-                      maxLength="4"
-                      placeholder="• • • •"
-                      value={pinInput}
-                      onChange={(e) => {
-                        setPinInput(e.target.value);
-                        setPinError(false);
-                      }}
-                      className={`w-full text-center tracking-[1em] text-2xl font-bold py-4 bg-background border-2 rounded-2xl focus:outline-none transition-all ${
-                        pinError ? 'border-danger bg-danger/5 text-danger' : 'border-border focus:border-primary focus:ring-4 focus:ring-primary/10'
-                      }`}
-                      autoFocus
-                    />
-                    {pinError && <p className="text-xs font-bold text-danger animate-bounce">Incorrect PIN! Default is 1234 or 0000.</p>}
+                    <div>
+                      <input 
+                        type="password"
+                        maxLength="6"
+                        placeholder="• • • •"
+                        value={pinInput}
+                        onChange={(e) => {
+                          setPinInput(e.target.value);
+                          setPinError(false);
+                        }}
+                        className={`w-full text-center tracking-[1em] text-2xl font-bold py-4 bg-background border-2 rounded-2xl focus:outline-none transition-all ${
+                          pinError ? 'border-danger bg-danger/5 text-danger' : 'border-border focus:border-primary focus:ring-4 focus:ring-primary/10'
+                        }`}
+                        autoFocus
+                      />
+                      {pinError && <p className="text-xs font-bold text-danger animate-bounce mt-2">Incorrect PIN! Default is 1234 or 0000.</p>}
+                    </div>
 
                     <button 
                       type="submit"
@@ -601,7 +603,7 @@ function App() {
         </main>
 
         {/* Native Android Bottom Navigation Bar (Google MD3 Style - Mobile Only) */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 min-h-[70px] pt-1.5 pb-2.5 bg-surface/98 backdrop-blur-xl border-t border-border/80 z-50 flex items-center justify-around px-2 shadow-[0_-4px_25px_rgba(0,0,0,0.1)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 min-h-[70px] pt-1.5 pb-[calc(10px+env(safe-area-inset-bottom,0px))] bg-surface/98 backdrop-blur-xl border-t border-border/80 z-50 flex items-center justify-around px-2 shadow-[0_-4px_25px_rgba(0,0,0,0.1)]">
           <button
             onClick={() => handleViewChange('floor')}
             className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
@@ -631,47 +633,41 @@ function App() {
             <span className="text-[11px] tracking-tight">KOTs</span>
           </button>
 
-          {!isCaptain && (
-            <button
-              onClick={() => handleViewChange('billing')}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-                view === 'billing' ? 'text-primary font-extrabold' : 'text-text-muted hover:text-text-main font-medium'
-              }`}
-            >
-              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'billing' ? 'bg-primary/15 text-primary scale-105 shadow-sm' : 'text-text-muted'}`}>
-                <UtensilsCrossed size={22} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-              </div>
-              <span className="text-[11px] tracking-tight font-black">Billing</span>
-            </button>
-          )}
+          <button
+            onClick={() => handleViewChange('billing')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              view === 'billing' ? 'text-primary font-extrabold' : 'text-text-muted hover:text-text-main font-medium'
+            }`}
+          >
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'billing' ? 'bg-primary/15 text-primary scale-105 shadow-sm' : 'text-text-muted'}`}>
+              <UtensilsCrossed size={22} className={view === 'billing' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight font-black">Billing</span>
+          </button>
 
-          {!isCaptain && (
-            <button
-              onClick={() => handleViewChange('history')}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-                view === 'history' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
-              }`}
-            >
-              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'history' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
-                <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-              </div>
-              <span className="text-[11px] tracking-tight">History</span>
-            </button>
-          )}
+          <button
+            onClick={() => handleViewChange('history')}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              view === 'history' ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
+            }`}
+          >
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${view === 'history' ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <Receipt size={20} className={view === 'history' ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight">History</span>
+          </button>
 
-          {!isCaptain && !isCashier && (
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
-                ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
-              }`}
-            >
-              <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
-                <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
-              </div>
-              <span className="text-[11px] tracking-tight">More</span>
-            </button>
-          )}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className={`flex flex-col items-center justify-center gap-1 flex-1 transition-all ${
+              ['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'text-primary font-bold' : 'text-text-muted hover:text-text-main font-medium'
+            }`}
+          >
+            <div className={`px-4 py-1 rounded-full transition-all flex items-center justify-center ${['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'bg-primary/15 text-primary scale-105' : 'text-text-muted'}`}>
+              <Menu size={20} className={['dashboard', 'analytics', 'daybook', 'menu', 'settings', 'delivery', 'expenses'].includes(view) ? 'stroke-[2.5]' : 'stroke-[1.75]'} />
+            </div>
+            <span className="text-[11px] tracking-tight">More</span>
+          </button>
         </div>
       </div>
 

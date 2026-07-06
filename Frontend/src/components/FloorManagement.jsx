@@ -251,7 +251,7 @@ const FloorManagement = ({ onNavigate }) => {
 
         <button 
           onClick={(e) => handleRemoveSpace(e, type, item.id)} 
-          className="absolute -top-3 -right-3 bg-danger text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
+          className="absolute -top-3 -right-3 bg-danger text-white rounded-full p-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
         >
           <Trash2 size={14} />
         </button>
@@ -286,7 +286,7 @@ const FloorManagement = ({ onNavigate }) => {
             {floors.length > 1 && (
                <button 
                  onClick={(e) => handleRemoveFloor(e, floor.id)} 
-                 className={`p-1 rounded-full ${activeFloorId === floor.id ? 'hover:bg-primary/20 text-primary' : 'hover:bg-border text-text-muted'} opacity-0 group-hover:opacity-100 transition-opacity`}
+                 className={`p-1 rounded-full ${activeFloorId === floor.id ? 'hover:bg-primary/20 text-primary' : 'hover:bg-border text-text-muted'} opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity`}
                >
                  <Trash2 size={14}/>
                </button>
