@@ -63,6 +63,9 @@ const LicenseScreen = ({ onValidLicense }) => {
 
         localStorage.setItem('resto_license', licenseKey.trim());
         localStorage.setItem('resto_license_expiry', data.validUntil);
+        if (data.databaseName) {
+          localStorage.setItem('resto_db_name', data.databaseName);
+        }
         try {
           const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
           await fetch(`${API_BASE_URL}/config/info`, {

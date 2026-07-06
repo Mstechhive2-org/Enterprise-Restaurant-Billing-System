@@ -193,8 +193,11 @@ const ensureDBConnection = async (req, res, next) => {
   }
 };
 
+import { tenantMiddleware } from './middleware/tenant.js';
+
 // Apply middleware to all API routes BEFORE routes are registered
 app.use('/api', ensureDBConnection);
+app.use('/api', tenantMiddleware);
 
 // Routes
 import menuRoutes from './routes/menuRoutes.js';

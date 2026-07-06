@@ -33,12 +33,27 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
-// Add a request interceptor to include the token
+// Add a request interceptor to include the token and tenant DB header
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const tenantDb = localStorage.getItem('resto_db_name');
+    if (tenantDb) {
+      config.headers['X-Tenant-DB'] = tenantDb;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+authApi.interceptors.request.use(
+  (config) => {
+    const tenantDb = localStorage.getItem('resto_db_name');
+    if (tenantDb) {
+      config.headers['X-Tenant-DB'] = tenantDb;
     }
     return config;
   },

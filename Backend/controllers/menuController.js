@@ -1,8 +1,9 @@
-import Menu from '../models/Menu.js';
-import Category from '../models/Category.js';
+import MenuDefault from '../models/Menu.js';
+import CategoryDefault from '../models/Category.js';
 
 export const getAllMenuItems = async (req, res) => {
   try {
+    const Menu = req.models?.Menu || MenuDefault;
     const items = await Menu.find({ isAvailable: true }).populate('category', 'name');
     res.status(200).json(items);
   } catch (error) {
@@ -12,6 +13,8 @@ export const getAllMenuItems = async (req, res) => {
 
 export const addMenuItem = async (req, res) => {
   try {
+    const Menu = req.models?.Menu || MenuDefault;
+    const Category = req.models?.Category || CategoryDefault;
     let categoryData = req.body.category;
 
     // If category is a string, find the category by name
@@ -36,6 +39,8 @@ export const addMenuItem = async (req, res) => {
 
 export const updateMenuItem = async (req, res) => {
   try {
+    const Menu = req.models?.Menu || MenuDefault;
+    const Category = req.models?.Category || CategoryDefault;
     let updateData = req.body;
 
     // If category is a string, find the category by name
@@ -61,6 +66,7 @@ export const updateMenuItem = async (req, res) => {
 
 export const deleteMenuItem = async (req, res) => {
   try {
+    const Menu = req.models?.Menu || MenuDefault;
     const deletedItem = await Menu.findByIdAndDelete(req.params.id);
     if (!deletedItem) {
       return res.status(404).json({ message: 'Menu item not found' });
@@ -73,6 +79,7 @@ export const deleteMenuItem = async (req, res) => {
 
 export const deleteAllMenuItems = async (req, res) => {
   try {
+    const Menu = req.models?.Menu || MenuDefault;
     await Menu.deleteMany({});
     res.status(200).json({ message: 'All menu items deleted successfully' });
   } catch (error) {

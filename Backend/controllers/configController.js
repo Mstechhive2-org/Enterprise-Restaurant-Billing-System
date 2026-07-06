@@ -2,8 +2,9 @@ import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import User from '../models/User.js';
-import Setting from '../models/Setting.js';
+import UserDefault from '../models/User.js';
+import SettingDefault from '../models/Setting.js';
+import { getTenantModels } from '../utils/tenantManager.js';
 
 export const setupDatabase = async (req, res) => {
   try {
@@ -13,32 +14,43 @@ export const setupDatabase = async (req, res) => {
       return res.status(400).json({ message: 'Missing required configuration fields.' });
     }
 
-    // 1. Write config
-    const configDir = process.env.APP_USER_DATA_PATH || process.cwd();
-    const configPath = path.join(configDir, 'client-config.json');
-    fs.writeFileSync(configPath, JSON.stringify({ databaseName }), 'utf8');
-
-    // 2. Disconnect existing mongoose
-    await mongoose.disconnect();
-
-    // 3. Generate new URI
-    const baseUri = process.env.MONGO_URI || 'mongodb://localhost:27017/restaurantbilling';
-    const parts = baseUri.split('?');
-    const connectionPart = parts[0];
-    const queryPart = parts.length > 1 ? `?${parts[1]}` : '';
+    // If running in cloud environment (Render, Vercel, or production), do NOT disconnect global database!
+    // Instead, initialize tenant pool for this database.
+    const isCloud = process.env.VERCEL || process.env.VERCEL_ENV || process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.MONGO_URI?.includes('mongodb+srv');
     
-    const lastSlashIndex = connectionPart.lastIndexOf('/');
-    const newConnectionPart = connectionPart.substring(0, lastSlashIndex) + '/' + databaseName;
-    const newUri = newConnectionPart + queryPart;
-    
-    // 4. Reconnect
-    await mongoose.connect(newUri, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-      maxPoolSize: 10,
-      minPoolSize: 1,
-    });
-    console.log(`Switched to new client database: ${databaseName}`);
+    let User = UserDefault;
+    if (isCloud) {
+      console.log(`[Cloud Mode] Initializing tenant connection for: ${databaseName}`);
+      const models = await getTenantModels(databaseName);
+      User = models.User;
+    } else {
+      // 1. Write config for local desktop POS app
+      const configDir = process.env.APP_USER_DATA_PATH || process.cwd();
+      const configPath = path.join(configDir, 'client-config.json');
+      fs.writeFileSync(configPath, JSON.stringify({ databaseName }), 'utf8');
+
+      // 2. Disconnect existing mongoose
+      await mongoose.disconnect();
+
+      // 3. Generate new URI
+      const baseUri = process.env.MONGO_URI || 'mongodb://localhost:27017/restaurantbilling';
+      const parts = baseUri.split('?');
+      const connectionPart = parts[0];
+      const queryPart = parts.length > 1 ? `?${parts[1]}` : '';
+      
+      const lastSlashIndex = connectionPart.lastIndexOf('/');
+      const newConnectionPart = connectionPart.substring(0, lastSlashIndex) + '/' + databaseName;
+      const newUri = newConnectionPart + queryPart;
+      
+      // 4. Reconnect
+      await mongoose.connect(newUri, {
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 45000,
+        maxPoolSize: 10,
+        minPoolSize: 1,
+      });
+      console.log(`Switched to new client database: ${databaseName}`);
+    }
 
     // 5. Seed initial admin user if the database is empty
     const userCount = await User.countDocuments();
@@ -51,7 +63,7 @@ export const setupDatabase = async (req, res) => {
         activeSessions: []
       });
       await newUser.save();
-      console.log(`Created initial admin user: ${username}`);
+      console.log(`Created initial admin user: ${username} in database ${databaseName}`);
     }
 
     res.status(200).json({ message: 'Database configured successfully' });
@@ -77,6 +89,7 @@ export const resetLicense = async (req, res) => {
 
 export const getRestaurantInfo = async (req, res) => {
   try {
+    const Setting = req.models?.Setting || SettingDefault;
     const expiryDoc = await Setting.findOne({ key: 'licenseExpiry' });
     const settingsDoc = await Setting.findOne({ key: 'restaurantSettings' });
     const spacesDoc = await Setting.findOne({ key: 'spaces' });
@@ -103,6 +116,7 @@ export const getRestaurantInfo = async (req, res) => {
 
 export const updateRestaurantInfo = async (req, res) => {
   try {
+    const Setting = req.models?.Setting || SettingDefault;
     const { licenseExpiry, restaurantSettings, spaces } = req.body;
     if (licenseExpiry) {
       await Setting.findOneAndUpdate({ key: 'licenseExpiry' }, { value: licenseExpiry }, { upsert: true });
@@ -118,4 +132,3 @@ export const updateRestaurantInfo = async (req, res) => {
     res.status(500).json({ message: 'Error updating config', error: error.message });
   }
 };
-

@@ -1,9 +1,10 @@
-import User from '../models/User.js';
+import UserDefault from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
   try {
+    const User = req.models?.User || UserDefault;
     const user = await User.findOne({ username });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -99,6 +100,7 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
+    const User = req.models?.User || UserDefault;
     const userId = req.user.id || req.user._id;
     const token = req.headers['authorization']?.split(' ')[1];
 
@@ -122,6 +124,7 @@ export const logout = async (req, res) => {
 
 export const logoutAll = async (req, res) => {
   try {
+    const User = req.models?.User || UserDefault;
     const userId = req.user.id || req.user._id;
 
     if (userId) {
@@ -150,6 +153,7 @@ export const refreshToken = async (req, res) => {
   }
 
   try {
+    const User = req.models?.User || UserDefault;
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
@@ -208,6 +212,7 @@ export const refreshToken = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
+    const User = req.models?.User || UserDefault;
     const { username } = req.body;
     const userId = req.user.id || req.user._id;
 
@@ -240,6 +245,7 @@ export const updateProfile = async (req, res) => {
 export const register = async (req, res) => {
   const { username, password, role } = req.body;
   try {
+    const User = req.models?.User || UserDefault;
     const user = new User({ username, password, role: role || 'Cashier' });
     await user.save();
     res.status(201).json({ message: 'User created successfully', user: { id: user._id, username: user.username, role: user.role } });
@@ -250,6 +256,7 @@ export const register = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
+    const User = req.models?.User || UserDefault;
     const users = await User.find({}, '-password');
     res.json(users);
   } catch (error) {
@@ -259,6 +266,7 @@ export const getUsers = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
+    const User = req.models?.User || UserDefault;
     if (req.params.id === req.user?.id) {
       return res.status(400).json({ message: 'Cannot delete your own admin account.' });
     }
@@ -275,6 +283,7 @@ export const createAdmin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    const User = req.models?.User || UserDefault;
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
 
@@ -333,6 +342,7 @@ export const setupAdmin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    const User = req.models?.User || UserDefault;
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
     if (existingAdmin) {
