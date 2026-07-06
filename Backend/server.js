@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Required for Render.com / Vercel reverse proxy rate limiting
 
 // Middleware
 // CORS configuration
