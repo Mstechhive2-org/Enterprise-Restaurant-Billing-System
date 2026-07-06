@@ -13,7 +13,6 @@ const licenseSchema = new mongoose.Schema({
   },
   plan: {
     type: String,
-    enum: ['Monthly', 'Yearly', 'Lifetime'],
     default: 'Yearly'
   },
   validUntil: {
