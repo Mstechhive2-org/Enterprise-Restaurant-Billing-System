@@ -2,10 +2,13 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import http from 'http';
+import { Server } from 'socket.io';
 
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 app.set('trust proxy', 1); // Required for Render.com / Vercel reverse proxy rate limiting
 
 // Middleware
@@ -50,6 +53,20 @@ app.use('/api', limiter);
 
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' })); // Body limit is increased to support base64 images
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: corsOptions
+});
+app.locals.io = io;
+
+io.on('connection', (socket) => {
+  socket.on('joinTenant', (tenantDb) => {
+    if (tenantDb) {
+      socket.join(tenantDb);
+    }
+  });
+});
 
 // 3. Data sanitization against NoSQL query injection
 // Custom middleware to handle Express 5 read-only properties (req.query)
@@ -233,8 +250,8 @@ if (process.env.VERCEL === '1' || process.env.VERCEL_ENV) {
 if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 5000;
   connectDB().then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    server.listen(PORT, () => {
+      console.log(`Server & Socket.io running on port ${PORT}`);
     });
   }).catch((err) => {
     console.error('Failed to start server:', err);

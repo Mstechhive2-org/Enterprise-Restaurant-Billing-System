@@ -1,6 +1,22 @@
 import MenuDefault from '../models/Menu.js';
 import CategoryDefault from '../models/Category.js';
 
+const emitSocketEvent = (req, eventName, data) => {
+  try {
+    const io = req.app?.locals?.io;
+    if (io) {
+      const tenantDb = req.headers['x-tenant-db'];
+      if (tenantDb) {
+        io.to(tenantDb).emit(eventName, data);
+      } else {
+        io.emit(eventName, data);
+      }
+    }
+  } catch (err) {
+    console.error('Socket emit error:', err);
+  }
+};
+
 export const getAllMenuItems = async (req, res) => {
   try {
     const Menu = req.models?.Menu || MenuDefault;
@@ -31,6 +47,7 @@ export const addMenuItem = async (req, res) => {
     const newItem = new Menu({ ...req.body, category: categoryData });
     await newItem.save();
     const populatedItem = await Menu.findById(newItem._id).populate('category', 'name');
+    emitSocketEvent(req, 'menuUpdated', { action: 'add', item: populatedItem });
     res.status(201).json(populatedItem);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -58,6 +75,7 @@ export const updateMenuItem = async (req, res) => {
     if (!updatedItem) {
       return res.status(404).json({ message: 'Menu item not found' });
     }
+    emitSocketEvent(req, 'menuUpdated', { action: 'update', item: updatedItem });
     res.status(200).json(updatedItem);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -71,6 +89,7 @@ export const deleteMenuItem = async (req, res) => {
     if (!deletedItem) {
       return res.status(404).json({ message: 'Menu item not found' });
     }
+    emitSocketEvent(req, 'menuUpdated', { action: 'delete', id: req.params.id });
     res.status(200).json({ message: 'Item deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -81,6 +100,7 @@ export const deleteAllMenuItems = async (req, res) => {
   try {
     const Menu = req.models?.Menu || MenuDefault;
     await Menu.deleteMany({});
+    emitSocketEvent(req, 'menuUpdated', { action: 'deleteAll' });
     res.status(200).json({ message: 'All menu items deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });

@@ -85,6 +85,13 @@ const LicenseScreen = ({ onValidLicense }) => {
     }
   };
 
+  const handleQuickDemo = () => {
+    localStorage.setItem('resto_license', 'MSBILL-DEMO-TEAM-2026');
+    localStorage.setItem('resto_license_expiry', '2126-12-31T23:59:59.000Z');
+    localStorage.setItem('resto_db_name', 'client_demo_db');
+    onValidLicense();
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
@@ -150,6 +157,21 @@ const LicenseScreen = ({ onValidLicense }) => {
                   <span>Activate Software</span>
                 </>
               )}
+            </button>
+
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-border"></div>
+              <span className="flex-shrink mx-4 text-xs font-bold text-text-muted uppercase">Or for presentations</span>
+              <div className="flex-grow border-t border-border"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleQuickDemo}
+              className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold py-3.5 rounded-xl shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5"
+            >
+              <span className="text-lg">🚀</span>
+              <span>Quick Demo Mode (No License Required)</span>
             </button>
           </form>
         </div>

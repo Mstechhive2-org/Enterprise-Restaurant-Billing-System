@@ -1,6 +1,22 @@
 import BillDefault from '../models/Bill.js';
 import cache from '../utils/cache.js';
 
+const emitSocketEvent = (req, eventName, data) => {
+  try {
+    const io = req.app?.locals?.io;
+    if (io) {
+      const tenantDb = req.headers['x-tenant-db'];
+      if (tenantDb) {
+        io.to(tenantDb).emit(eventName, data);
+      } else {
+        io.emit(eventName, data);
+      }
+    }
+  } catch (err) {
+    console.error('Socket emit error:', err);
+  }
+};
+
 // Get active order for a table
 export const getActiveOrder = async (req, res) => {
   try {
@@ -113,6 +129,8 @@ export const saveOrder = async (req, res) => {
     cache.clear('dailyStats');
     cache.clear('openOrders');
     
+    emitSocketEvent(req, 'orderUpdated', { tableNo, status: order.status });
+    
     res.status(200).json(order);
   } catch (error) {
     console.error('Error in saveOrder:', error);
@@ -162,6 +180,8 @@ export const generateBill = async (req, res) => {
     cache.clear('dailyStats');
     cache.clear('openOrders');
     
+    emitSocketEvent(req, 'orderUpdated', { tableNo: order.tableNo, status: 'Billed' });
+    
     return res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -196,6 +216,8 @@ export const transferTable = async (req, res) => {
     await order.save();
     
     cache.clear('openOrders');
+    
+    emitSocketEvent(req, 'tableTransferred', { oldTableNo: id, newTableNo });
     
     return res.json({ message: 'Table transferred successfully', order });
   } catch (error) {
@@ -237,6 +259,8 @@ export const settleBill = async (req, res) => {
     // Clear cache when bill is settled (most important for dashboard)
     cache.clear('dailyStats');
     cache.clear('openOrders');
+    
+    emitSocketEvent(req, 'billSettled', { tableNo: order.tableNo, billNumber: order.billNumber });
     
     // Return the saved bill with all details
     res.json(order);
@@ -773,6 +797,8 @@ export const reopenOrder = async (req, res) => {
     
     await bill.save();
 
+    emitSocketEvent(req, 'orderUpdated', { tableNo: bill.tableNo, status: 'Open' });
+
     res.status(200).json({
       message: 'Order reopened successfully',
       bill
@@ -826,6 +852,8 @@ export const cancelOrder = async (req, res) => {
 
     bill.status = 'Cancelled';
     await bill.save();
+
+    emitSocketEvent(req, 'orderUpdated', { tableNo: bill.tableNo, status: 'Cancelled' });
 
     res.status(200).json({
       message: 'Order cancelled successfully',

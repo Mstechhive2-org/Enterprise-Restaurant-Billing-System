@@ -15,14 +15,15 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/superadmi
   }, { strict: false });
   const Client = mongoose.model('Client', ClientSchema);
   
-  const license = await License.findOne({ key: 'MSBILL-A591-7C7B-7D03' });
+  const license = await License.findOne({ key: 'MSBILL-MM01-REST-2026' });
   if (!license) {
      console.log("License not found");
      process.exit(1);
   }
   
   const result = await Client.updateOne({ _id: license.client }, { $set: { hardwareId: null } });
-  console.log(result);
+  await License.updateOne({ key: 'MSBILL-MM01-REST-2026' }, { $set: { boundMachineId: null, status: 'active' } });
+  console.log("Cleared binding for MSBILL-MM01-REST-2026:", result);
   process.exit(0);
 }).catch(err => {
   console.error(err);

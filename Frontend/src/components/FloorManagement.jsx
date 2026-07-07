@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getOpenOrders } from '../api/billing';
 import { Plus, Coffee, Home, Trash2, Sofa, Utensils, CheckCircle, Clock } from 'lucide-react';
+import { io } from 'socket.io-client';
 import Toast from './Toast';
 
 const FloorManagement = ({ onNavigate }) => {
@@ -72,9 +73,23 @@ const FloorManagement = ({ onNavigate }) => {
       }
     };
     window.addEventListener('spacesUpdated', handleSpacesUpdated);
+
+    // Socket.io Real-Time Connection
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+    const socketUrl = API_BASE_URL.replace('/api', '');
+    const socket = io(socketUrl);
+    const tenantDb = localStorage.getItem('resto_db_name');
+    if (tenantDb) {
+      socket.emit('joinTenant', tenantDb);
+    }
+    socket.on('orderUpdated', () => fetchOrders());
+    socket.on('tableTransferred', () => fetchOrders());
+    socket.on('billSettled', () => fetchOrders());
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('spacesUpdated', handleSpacesUpdated);
+      socket.disconnect();
     };
   }, []);
 
