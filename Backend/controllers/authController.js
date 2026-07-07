@@ -83,6 +83,21 @@ export const login = async (req, res) => {
 
     await user.save();
 
+    let databaseName = req.headers['x-tenant-db'] || 'client_maheer_db';
+    let licenseKey = 'MSBILL-MAH1-EER2-2026';
+
+    const uname = user.username.toLowerCase();
+    if (uname.includes('mm') || uname === 'mm restaurants' || uname === 'mm restaurant') {
+      databaseName = 'client_mm_db';
+      licenseKey = 'MSBILL-MM01-REST-2026';
+    } else if (uname.includes('demo')) {
+      databaseName = 'client_demo_db';
+      licenseKey = 'MSBILL-DEMO-TEAM-2026';
+    } else if (uname.includes('maheer')) {
+      databaseName = 'client_maheer_db';
+      licenseKey = 'MSBILL-MAH1-EER2-2026';
+    }
+
     res.status(200).json({
       accessToken,
       refreshToken,
@@ -90,7 +105,9 @@ export const login = async (req, res) => {
         id: user._id,
         username: user.username,
         role: user.role
-      }
+      },
+      databaseName,
+      licenseKey
     });
   } catch (error) {
     console.error('Login error:', error);

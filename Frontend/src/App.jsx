@@ -65,7 +65,11 @@ function App() {
     const syncConfigFromBackend = async () => {
       try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
-        const res = await fetch(`${API_BASE_URL}/config/info`);
+        const res = await fetch(`${API_BASE_URL}/config/info`, {
+          headers: {
+            'X-Tenant-DB': localStorage.getItem('resto_db_name') || ''
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.licenseExpiry) {
@@ -171,6 +175,12 @@ function App() {
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.user));
+    if (data.databaseName) {
+      localStorage.setItem('resto_db_name', data.databaseName);
+    }
+    if (data.licenseKey) {
+      localStorage.setItem('resto_license', data.licenseKey);
+    }
   };
 
   const handleLogout = async () => {
