@@ -254,9 +254,15 @@ const LoginPage = ({ onLoginSuccess }) => {
                         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
                         await fetch(`${API_BASE_URL}/config/reset`, { method: 'POST' });
                         // Keep 'resto_hwid' so the computer's unique hardware fingerprint remains unchanged!
+                        
+                        // Clear ALL restaurant-specific data to prevent old restaurant names from bleeding through
                         localStorage.removeItem('resto_license'); // Clear license key memory
                         localStorage.removeItem('resto_license_expiry'); // Clear license expiry memory
                         localStorage.removeItem('user'); // Clear user session
+                        localStorage.removeItem('resto_db_name'); // CRITICAL FIX: Clear old database name
+                        localStorage.removeItem('restaurantSettings'); // CRITICAL FIX: Clear old restaurant name and settings
+                        localStorage.removeItem('msbillings_spaces'); // CRITICAL FIX: Clear old floor layout
+                        
                         alert('License reset successfully. Please restart the application.');
                         window.location.reload();
                       } catch (err) {
