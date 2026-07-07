@@ -29,7 +29,16 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [sectionLoading, setSectionLoading] = useState(false);
-  const [restaurantName, setRestaurantName] = useState('msbillings');
+  const [restaurantName, setRestaurantName] = useState(() => {
+    try {
+      const cached = localStorage.getItem('restaurantSettings');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed.restaurantName || 'msbillings';
+      }
+    } catch (e) {}
+    return 'msbillings';
+  });
   const [profileOpen, setProfileOpen] = useState(false);
   const [hasLicense, setHasLicense] = useState(false);
   const [ownerUnlocked, setOwnerUnlocked] = useState(false);
@@ -93,15 +102,13 @@ function App() {
         }
       } catch (err) {}
       
-      // Fallback to localStorage or July 12, 2026 if offline/not synced yet
+      // Fallback to localStorage if offline/not synced yet (no hardcoded dates)
       let expiryStr = localStorage.getItem('resto_license_expiry');
-      if (!expiryStr || expiryStr.includes('2027-')) {
-        expiryStr = '2026-07-12T23:59:59.000Z'; // Sync to exact Demo Expiry (8 days left)
-        localStorage.setItem('resto_license_expiry', expiryStr);
-      }
-      const expiryDate = new Date(expiryStr);
-      if (!isNaN(expiryDate.getTime())) {
-        setLicenseExpiry(expiryDate);
+      if (expiryStr) {
+        const expiryDate = new Date(expiryStr);
+        if (!isNaN(expiryDate.getTime())) {
+          setLicenseExpiry(expiryDate);
+        }
       }
     };
     syncConfigFromBackend();
@@ -172,6 +179,13 @@ function App() {
   };
 
   const handleLoginSuccess = (data) => {
+    // Step 1: Clear ALL old restaurant-specific cached data FIRST
+    // This prevents stale data from a previously logged-in restaurant from showing up
+    localStorage.removeItem('restaurantSettings');
+    localStorage.removeItem('msbillings_spaces');
+    localStorage.removeItem('resto_license_expiry');
+
+    // Step 2: Set the NEW user's auth and restaurant data
     setUser(data.user);
     localStorage.setItem('accessToken', data.accessToken);
     localStorage.setItem('refreshToken', data.refreshToken);
@@ -182,7 +196,8 @@ function App() {
     if (data.licenseKey) {
       localStorage.setItem('resto_license', data.licenseKey);
     }
-    // Clean reload to ensure all React state, sockets, and configs sync cleanly to the logged-in restaurant!
+
+    // Step 3: Clean reload to ensure all React state, sockets, and configs sync to the NEW restaurant
     window.location.reload();
   };
 
@@ -194,11 +209,19 @@ function App() {
       // Even if logout API fails, clear local state
       console.error('Logout error:', error);
     } finally {
-      // Clear local state regardless of API call result
+      // Clear ALL local state — both auth AND restaurant-specific data.
+      // This is critical for multi-tenant: if an MM admin logs out and a Saif admin
+      // logs in on the same terminal, old MM restaurant name/settings must be gone!
       setUser(null);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      // Clear restaurant-specific cached data
+      localStorage.removeItem('resto_db_name');
+      localStorage.removeItem('resto_license');
+      localStorage.removeItem('resto_license_expiry');
+      localStorage.removeItem('restaurantSettings');
+      localStorage.removeItem('msbillings_spaces');
     }
   };
 

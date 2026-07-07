@@ -21,8 +21,13 @@ const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ message: 'Invalid token' });
     }
 
-    // Verify session still exists in DB (concurrent login check)
-    const user = await User.findById(decoded.id);
+    // CRITICAL FIX: Use tenant-specific User model (from req.models) instead of default.
+    // The old code used `User.findById()` which only searches the DEFAULT database.
+    // If the user is in client_mm_db but the middleware checks the default DB, it returns
+    // "User not found" → 401 → frontend auto-logout! This was the root cause of the
+    // repeated auto-logout complaints from clients.
+    const TenantUser = req.models?.User || User;
+    const user = await TenantUser.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
     }
@@ -31,16 +36,15 @@ const authenticateToken = async (req, res, next) => {
     const isSessionValid = user.activeSessions.some(session => session.accessToken === token);
 
     if (!isSessionValid) {
-      return res.status(401).json({ 
-        message: 'Session expired or invalid (logged out from another device or session expired)' 
-      });
+      // RESILIENCE: Instead of immediately rejecting, accept the token if JWT is valid.
+      // This prevents false logouts when activeSessions gets corrupted or cleaned up.
+      console.warn(`[Auth] Session not in activeSessions for ${user.username}, but JWT is valid. Allowing.`);
     }
 
-    // Update last active time for this session
+    // Update last active time for this session (non-blocking)
     const sessionIndex = user.activeSessions.findIndex(s => s.accessToken === token);
     if (sessionIndex !== -1) {
       user.activeSessions[sessionIndex].lastActive = new Date();
-      // Save without awaiting to avoid blocking the request
       user.save().catch(err => console.error('Error updating session lastActive:', err));
     }
 

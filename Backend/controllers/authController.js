@@ -1,10 +1,49 @@
 import UserDefault from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import { getTenantModels } from '../utils/tenantManager.js';
+
+// Helper: Determine correct database from username
+const getDatabaseForUsername = (username) => {
+  const uname = (username || '').toLowerCase();
+  if (uname.includes('mm') || uname === 'mm restaurants' || uname === 'mm restaurant') {
+    return { databaseName: 'client_mm_db', licenseKey: 'MSBILL-MM01-REST-2026' };
+  } else if (uname.includes('demo')) {
+    return { databaseName: 'client_demo_db', licenseKey: 'MSBILL-DEMO-TEAM-2026' };
+  } else if (uname.includes('saif')) {
+    return { databaseName: 'client_saif_special_db', licenseKey: 'MSBILL-39BB-2AD1-687F' };
+  } else if (uname.includes('star')) {
+    return { databaseName: 'client_starchicken_db', licenseKey: 'MSBILL-STAR-CHKN-2026' };
+  } else if (uname.includes('maheer')) {
+    return { databaseName: 'client_maheer_db', licenseKey: 'MSBILL-MAH1-EER2-2026' };
+  }
+  return null; // Use whatever the tenant header says
+};
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const User = req.models?.User || UserDefault;
+    // CRITICAL FIX: Determine the correct database from the username FIRST,
+    // then authenticate against THAT database — not the one from the X-Tenant-DB header.
+    // This prevents "Invalid credentials" when a Desktop (.exe) terminal was activated
+    // with a different restaurant's license key (e.g., Saif's license but MM's admin login).
+    const dbMapping = getDatabaseForUsername(username);
+    let User;
+    let databaseName;
+    let licenseKey;
+
+    if (dbMapping) {
+      // We know which database this username belongs to — connect directly
+      const tenantModels = await getTenantModels(dbMapping.databaseName);
+      User = tenantModels?.User || req.models?.User || UserDefault;
+      databaseName = dbMapping.databaseName;
+      licenseKey = dbMapping.licenseKey;
+    } else {
+      // Unknown username pattern — use the tenant header (original behavior)
+      User = req.models?.User || UserDefault;
+      databaseName = req.headers['x-tenant-db'] || 'client_maheer_db';
+      licenseKey = 'MSBILL-MAH1-EER2-2026';
+    }
+
     const user = await User.findOne({ username });
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -83,26 +122,8 @@ export const login = async (req, res) => {
 
     await user.save();
 
-    let databaseName = req.headers['x-tenant-db'] || 'client_maheer_db';
-    let licenseKey = 'MSBILL-MAH1-EER2-2026';
-
-    const uname = user.username.toLowerCase();
-    if (uname.includes('mm') || uname === 'mm restaurants' || uname === 'mm restaurant') {
-      databaseName = 'client_mm_db';
-      licenseKey = 'MSBILL-MM01-REST-2026';
-    } else if (uname.includes('demo')) {
-      databaseName = 'client_demo_db';
-      licenseKey = 'MSBILL-DEMO-TEAM-2026';
-    } else if (uname.includes('saif')) {
-      databaseName = 'client_saif_special_db';
-      licenseKey = 'MSBILL-39BB-2AD1-687F';
-    } else if (uname.includes('star')) {
-      databaseName = 'client_starchicken_db';
-      licenseKey = 'MSBILL-STAR-CHKN-2026';
-    } else if (uname.includes('maheer')) {
-      databaseName = 'client_maheer_db';
-      licenseKey = 'MSBILL-MAH1-EER2-2026';
-    }
+    // databaseName and licenseKey are already determined at the top of this function
+    // from getDatabaseForUsername() — no need to re-check here
 
     res.status(200).json({
       accessToken,
