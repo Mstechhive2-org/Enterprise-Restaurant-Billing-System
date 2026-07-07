@@ -165,7 +165,7 @@ export const validateLicense = async (req, res) => {
     if (!client.hardwareId) {
       client.hardwareId = hardwareId;
       await client.save();
-    } else if (client.hardwareId !== hardwareId && client.plan !== 'Lifetime Premium' && client.plan !== '1 Year Premium' && !client.licenseKey.includes('MAH') && !client.licenseKey.includes('DEMO') && !client.licenseKey.includes('MM')) {
+    } else if (client.hardwareId !== hardwareId && client.plan !== 'Lifetime Premium' && client.plan !== '1 Year Premium' && !client.licenseKey.includes('MAH') && !client.licenseKey.includes('DEMO') && !client.licenseKey.includes('MM') && !client.licenseKey.includes('39BB') && !client.licenseKey.includes('SAIF')) {
       // Trying to use on a different computer! Block it only if not a permanent/premium license.
       return res.status(403).json({ valid: false, message: 'License is already bound to another computer. Contact support.' });
     }
