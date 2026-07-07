@@ -94,7 +94,7 @@ export const login = async (req, res) => {
       databaseName = 'client_demo_db';
       licenseKey = 'MSBILL-DEMO-TEAM-2026';
     } else if (uname.includes('saif')) {
-      databaseName = 'client_saifrestaurant_6a38ca';
+      databaseName = 'client_saif_special_db';
       licenseKey = 'MSBILL-39BB-2AD1-687F';
     } else if (uname.includes('maheer')) {
       databaseName = 'client_maheer_db';
