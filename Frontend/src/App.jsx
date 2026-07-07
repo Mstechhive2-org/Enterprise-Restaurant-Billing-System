@@ -181,6 +181,8 @@ function App() {
     if (data.licenseKey) {
       localStorage.setItem('resto_license', data.licenseKey);
     }
+    // Clean reload to ensure all React state, sockets, and configs sync cleanly to the logged-in restaurant!
+    window.location.reload();
   };
 
   const handleLogout = async () => {
