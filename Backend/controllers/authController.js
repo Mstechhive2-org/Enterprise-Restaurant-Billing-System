@@ -65,13 +65,13 @@ export const login = async (req, res) => {
     const accessToken = jwt.sign(
       { id: userId, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '3650d' }
     );
 
     const refreshToken = jwt.sign(
       { id: userId, role: user.role },
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: '3650d' }
     );
 
     // Add new session to database
