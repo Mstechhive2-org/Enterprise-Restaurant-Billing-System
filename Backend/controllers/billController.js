@@ -1,5 +1,6 @@
 import BillDefault from '../models/Bill.js';
 import cache from '../utils/cache.js';
+import { deductStockForBillItems } from './inventoryController.js';
 
 const emitSocketEvent = (req, eventName, data) => {
   try {
@@ -256,6 +257,9 @@ export const settleBill = async (req, res) => {
     // Save the bill - it's now in billing history with fresh timestamp
     await order.save();
     
+    // Automatically deduct inventory stock based on recipe maps
+    deductStockForBillItems(req, order.items, 'POS Billing Counter').catch(err => console.error('Auto stock deduction error:', err));
+
     // Clear cache when bill is settled (most important for dashboard)
     cache.clear('dailyStats');
     cache.clear('openOrders');

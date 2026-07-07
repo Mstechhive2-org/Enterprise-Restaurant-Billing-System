@@ -224,6 +224,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js';
 import configRoutes from './routes/configRoutes.js';
+import inventoryRoutes from './routes/inventoryRoutes.js';
 import startSessionCleanupJob from './utils/sessionCleanup.js';
 
 app.use('/api/menu', menuRoutes);
@@ -233,6 +234,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/config', configRoutes);
+app.use('/api/inventory', inventoryRoutes);
 
 // Start background session cleanup job
 startSessionCleanupJob();

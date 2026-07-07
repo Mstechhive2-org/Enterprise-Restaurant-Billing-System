@@ -5,6 +5,9 @@ import SettingDefault from '../models/Setting.js';
 import UserDefault from '../models/User.js';
 import CategoryDefault from '../models/Category.js';
 import ExpenseDefault from '../models/Expense.js';
+import InventoryItemDefault from '../models/InventoryItem.js';
+import RecipeDefault from '../models/Recipe.js';
+import StockLogDefault from '../models/StockLog.js';
 
 const connectionPool = new Map();
 
@@ -44,6 +47,9 @@ export const getTenantModels = async (databaseName) => {
   const User = conn.models.User || conn.model('User', UserDefault.schema);
   const Category = conn.models.Category || conn.model('Category', CategoryDefault.schema);
   const Expense = conn.models.Expense || conn.model('Expense', ExpenseDefault.schema);
+  const InventoryItem = conn.models.InventoryItem || conn.model('InventoryItem', InventoryItemDefault.schema);
+  const Recipe = conn.models.Recipe || conn.model('Recipe', RecipeDefault.schema);
+  const StockLog = conn.models.StockLog || conn.model('StockLog', StockLogDefault.schema);
 
   return {
     Menu,
@@ -52,6 +58,9 @@ export const getTenantModels = async (databaseName) => {
     User,
     Category,
     Expense,
+    InventoryItem,
+    Recipe,
+    StockLog,
     connection: conn
   };
 };

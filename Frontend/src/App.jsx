@@ -14,8 +14,9 @@ const DeliveryOrders = React.lazy(() => import('./components/DeliveryOrders'));
 const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 const DayBook = React.lazy(() => import('./components/DayBook'));
+const InventoryManagement = React.lazy(() => import('./components/InventoryManagement'));
 import SessionManager from './components/SessionManager';
-import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu, Receipt, Clock } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu, Receipt, Clock, Package } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';
 import './App.css';
@@ -242,6 +243,7 @@ function App() {
       case 'menu': return 'Menu Management';
       case 'delivery': return 'Delivery Orders';
       case 'expenses': return 'Petty Cash & Expenses';
+      case 'inventory': return 'Inventory & Stock';
       case 'settings': return 'System Settings';
       default: return 'Restaurant Management';
     }
@@ -379,6 +381,17 @@ function App() {
             >
               <BookOpen size={20} />
               <span>DayBook</span>
+            </button>
+          )}
+
+          {/* 7.6 Inventory - Admin only */}
+          {isAdmin && (
+            <button
+              onClick={() => handleViewChange('inventory')}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all font-medium ${view === 'inventory' ? 'bg-primary text-white shadow-lg shadow-primary/25 translate-x-2' : 'text-text-muted hover:bg-surface-hover hover:text-text-main hover:translate-x-1'}`}
+            >
+              <Package size={20} />
+              <span>Inventory</span>
             </button>
           )}
 
@@ -608,6 +621,7 @@ function App() {
                 {view === 'menu' && <MenuManagement user={user} />}
                 {view === 'delivery' && <DeliveryOrders />}
                 {view === 'expenses' && <Expenses />}
+                {view === 'inventory' && <InventoryManagement />}
                 {view === 'settings' && <Settings user={user} setUser={setUser} />}
               </>
             )}
