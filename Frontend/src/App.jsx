@@ -77,7 +77,8 @@ function App() {
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
         const res = await fetch(`${API_BASE_URL}/config/info`, {
           headers: {
-            'X-Tenant-DB': localStorage.getItem('resto_db_name') || ''
+            'X-Tenant-DB': localStorage.getItem('resto_db_name') || '',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
           }
         });
         if (res.ok) {
