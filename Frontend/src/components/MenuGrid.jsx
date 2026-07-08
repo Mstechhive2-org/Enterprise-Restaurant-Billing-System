@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { getMenuItems } from '../api/menu';
 import { getCategories } from '../api/category';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const formatImageUrl = (url) => {
   if (!url) return '';
@@ -41,6 +42,17 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('All');
+  const scrollContainerRef = useRef(null);
+
+  const scroll = (direction) => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = 200;
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   useEffect(() => {
     fetchCategories();
@@ -113,20 +125,43 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
     <div className="flex flex-col h-full bg-surface overflow-hidden">
       {/* Top Bar: Categories */}
       <div className="p-4 border-b border-border bg-surface z-10 flex flex-col gap-4 shrink-0">
-        <div className="flex items-center gap-4 overflow-x-auto pb-2 category-scroll">
-          {categoryOptions.map(cat => (
-            <button 
-              key={cat}
-              className={`px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all transform hover:scale-105 ${
-                category === cat 
-                  ? 'bg-primary text-white shadow-lg shadow-primary/25 ring-2 ring-primary/20' 
-                  : 'bg-background text-text-muted hover:bg-surface-hover hover:text-text-main border border-border'
-              }`}
-              onClick={() => setCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 w-full">
+          {/* Scroll Left Button */}
+          <button
+            onClick={() => scroll('left')}
+            className="p-2 rounded-xl bg-background hover:bg-surface-hover border border-border shadow-sm transition-all duration-200 text-text-muted hover:text-text-main hover:scale-105 shrink-0 cursor-pointer flex items-center justify-center"
+            title="Scroll Left"
+          >
+            <ChevronLeft size={20} className="stroke-[2.5]" />
+          </button>
+          
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 flex items-center gap-4 overflow-x-auto pb-2 category-scroll"
+          >
+            {categoryOptions.map(cat => (
+              <button 
+                key={cat}
+                className={`px-6 py-2.5 rounded-full font-bold text-sm whitespace-nowrap transition-all transform hover:scale-105 ${
+                  category === cat 
+                    ? 'bg-primary text-white shadow-lg shadow-primary/25 ring-2 ring-primary/20' 
+                    : 'bg-background text-text-muted hover:bg-surface-hover hover:text-text-main border border-border'
+                }`}
+                onClick={() => setCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Scroll Right Button */}
+          <button
+            onClick={() => scroll('right')}
+            className="p-2 rounded-xl bg-background hover:bg-surface-hover border border-border shadow-sm transition-all duration-200 text-text-muted hover:text-text-main hover:scale-105 shrink-0 cursor-pointer flex items-center justify-center"
+            title="Scroll Right"
+          >
+            <ChevronRight size={20} className="stroke-[2.5]" />
+          </button>
         </div>
       </div>
       
