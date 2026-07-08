@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { getTenantModels } from '../utils/tenantManager.js';
 
 const authenticateToken = async (req, res, next) => {
   try {
@@ -21,12 +22,31 @@ const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ message: 'Invalid token' });
     }
 
-    // CRITICAL FIX: Use tenant-specific User model (from req.models) instead of default.
-    // The old code used `User.findById()` which only searches the DEFAULT database.
-    // If the user is in client_mm_db but the middleware checks the default DB, it returns
-    // "User not found" → 401 → frontend auto-logout! This was the root cause of the
-    // repeated auto-logout complaints from clients.
-    const TenantUser = req.models?.User || User;
+    // CRITICAL FIX: Determine the correct User model with multiple fallbacks:
+    // 1. Use req.models?.User (from tenant middleware via X-Tenant-DB header) — best case
+    // 2. Use decoded.db from the JWT token itself — works for old Desktop .exe apps
+    //    that don't send the X-Tenant-DB header
+    // 3. Fall back to default User model — last resort
+    let TenantUser = req.models?.User;
+
+    if (!TenantUser && decoded.db) {
+      // The JWT contains the database name — connect to it directly
+      try {
+        const tenantModels = await getTenantModels(decoded.db);
+        if (tenantModels?.User) {
+          TenantUser = tenantModels.User;
+          // Also populate req.models for downstream controllers
+          req.models = tenantModels;
+        }
+      } catch (err) {
+        console.error('[Auth] Failed to connect to tenant DB from JWT:', err.message);
+      }
+    }
+
+    if (!TenantUser) {
+      TenantUser = User; // Final fallback to default database
+    }
+
     const user = await TenantUser.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'User not found' });
