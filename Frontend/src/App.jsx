@@ -725,26 +725,40 @@ function App() {
       </div>
 
       {/* License Expiry Warning Popup */}
-      {showExpiryPopup && daysRemaining !== null && daysRemaining <= 15 && (
+      {showExpiryPopup && daysRemaining !== null && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] animate-in fade-in duration-200">
           <div className="bg-surface rounded-3xl border border-border shadow-2xl max-w-md w-full mx-4 overflow-hidden">
             {/* Header */}
             <div className={`px-6 py-5 flex items-center justify-between ${
-              daysRemaining <= 0 ? 'bg-gradient-to-r from-red-500/20 to-red-400/10' : 'bg-gradient-to-r from-amber-500/20 to-amber-400/10'
+              daysRemaining <= 0 
+                ? 'bg-gradient-to-r from-red-500/20 to-red-400/10' 
+                : daysRemaining > 365
+                ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-400/10'
+                : 'bg-gradient-to-r from-amber-500/20 to-amber-400/10'
             }`}>
               <div className="flex items-center gap-3">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${
-                  daysRemaining <= 0 ? 'bg-red-500/20 text-red-500' : 'bg-amber-500/20 text-amber-500'
+                  daysRemaining <= 0 
+                    ? 'bg-red-500/20 text-red-500' 
+                    : daysRemaining > 365
+                    ? 'bg-emerald-500/20 text-emerald-500'
+                    : 'bg-amber-500/20 text-amber-500'
                 }`}>
-                  <ShieldAlert size={28} />
+                  {daysRemaining > 365 ? <CalendarClock size={28} /> : <ShieldAlert size={28} />}
                 </div>
                 <div>
                   <h2 className="text-lg font-extrabold text-text-main">
-                    {daysRemaining <= 0 ? 'License Expired!' : 'License Expiring Soon!'}
+                    {daysRemaining <= 0 
+                      ? 'License Expired!' 
+                      : daysRemaining > 365
+                      ? 'License Active!'
+                      : 'License Expiring Soon!'}
                   </h2>
                   <p className="text-xs text-text-muted font-medium">
                     {daysRemaining <= 0
                       ? 'Your software license has expired.'
+                      : daysRemaining > 365
+                      ? 'Your lifetime license is active.'
                       : `Only ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining!`}
                   </p>
                 </div>
@@ -763,44 +777,70 @@ function App() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-text-muted font-medium">Expiry Date</span>
                   <span className="text-sm font-bold text-text-main">
-                    {licenseExpiry ? licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'}
+                    {daysRemaining > 365 
+                      ? 'Permanent (Lifetime)' 
+                      : licenseExpiry 
+                      ? licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) 
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-text-muted font-medium">Days Remaining</span>
                   <span className={`text-sm font-bold ${
-                    daysRemaining <= 0 ? 'text-red-500' : daysRemaining <= 7 ? 'text-red-500' : 'text-amber-500'
+                    daysRemaining <= 0 
+                      ? 'text-red-500' 
+                      : daysRemaining > 365
+                      ? 'text-emerald-500'
+                      : daysRemaining <= 7 
+                      ? 'text-red-500' 
+                      : 'text-amber-500'
                   }`}>
-                    {daysRemaining <= 0 ? 'EXPIRED' : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`}
+                    {daysRemaining <= 0 
+                      ? 'EXPIRED' 
+                      : daysRemaining > 365
+                      ? 'Lifetime'
+                      : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`}
                   </span>
                 </div>
                 {/* Progress bar */}
-                <div className="h-2 bg-border rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      daysRemaining <= 0 ? 'bg-red-500' : daysRemaining <= 7 ? 'bg-red-400' : 'bg-amber-400'
-                    }`}
-                    style={{ width: `${Math.max(0, Math.min(100, ((15 - Math.max(0, daysRemaining)) / 15) * 100))}%` }}
-                  />
-                </div>
+                {daysRemaining <= 365 && (
+                  <div className="h-2 bg-border rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        daysRemaining <= 0 ? 'bg-red-500' : daysRemaining <= 7 ? 'bg-red-400' : 'bg-amber-400'
+                      }`}
+                      style={{ width: `${Math.max(0, Math.min(100, ((15 - Math.max(0, daysRemaining)) / 15) * 100))}%` }}
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="bg-amber-50 dark:bg-amber-500/10 rounded-2xl p-4 border border-amber-200 dark:border-amber-500/20">
-                <p className="text-sm text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
-                  {daysRemaining <= 0
-                    ? 'Your license has expired. Please renew immediately to continue using all features without interruption.'
-                    : 'Your license will expire soon. Please renew before the expiry date to avoid any service interruption.'}
-                </p>
-              </div>
+              {daysRemaining <= 365 ? (
+                <div className="bg-amber-50 dark:bg-amber-500/10 rounded-2xl p-4 border border-amber-200 dark:border-amber-500/20">
+                  <p className="text-sm text-amber-800 dark:text-amber-300 font-medium leading-relaxed">
+                    {daysRemaining <= 0
+                      ? 'Your license has expired. Please renew immediately to continue using all features without interruption.'
+                      : 'Your license will expire soon. Please renew before the expiry date to avoid any service interruption.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-500/20">
+                  <p className="text-sm text-emerald-800 dark:text-emerald-300 font-medium leading-relaxed">
+                    Thank you for choosing MS Tech Hive! Your software license is fully active and has no upcoming expiration.
+                  </p>
+                </div>
+              )}
 
               {/* Contact Info */}
-              <div className="bg-primary/5 rounded-2xl p-4 border border-primary/15">
-                <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-2">Contact Customer Care</p>
-                <a href="tel:+919701800140" className="flex items-center gap-3 text-primary font-bold text-lg hover:underline">
-                  <Phone size={20} />
-                  +91 9701800140
-                </a>
-              </div>
+              {daysRemaining <= 365 && (
+                <div className="bg-primary/5 rounded-2xl p-4 border border-primary/15">
+                  <p className="text-xs text-text-muted font-bold uppercase tracking-wider mb-2">Contact Customer Care</p>
+                  <a href="tel:+919701800140" className="flex items-center gap-3 text-primary font-bold text-lg hover:underline">
+                    <Phone size={20} />
+                    +91 9701800140
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
