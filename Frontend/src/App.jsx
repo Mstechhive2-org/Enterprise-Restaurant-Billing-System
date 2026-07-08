@@ -487,12 +487,18 @@ function App() {
                 <span className="hidden sm:inline">
                   {daysRemaining <= 0
                     ? 'License Expired!'
+                    : daysRemaining > 365
+                    ? 'Lifetime License'
                     : `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left`}
                 </span>
                 <span className="sm:hidden text-[11px]">
-                  {daysRemaining <= 0 ? 'Expired' : `${daysRemaining}d`}
+                  {daysRemaining <= 0 
+                    ? 'Expired' 
+                    : daysRemaining > 365
+                    ? 'Lifetime'
+                    : `${daysRemaining}d`}
                 </span>
-                {licenseExpiry && (
+                {licenseExpiry && daysRemaining <= 365 && (
                   <span className="opacity-60 hidden md:inline">
                     (Exp: {licenseExpiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })})
                   </span>

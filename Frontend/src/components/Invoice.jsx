@@ -96,6 +96,10 @@ const Invoice = ({ bill, onClose, onSave }) => {
             <span>{new Date(bill.createdAt).toLocaleDateString('en-GB').replace(/\//g, '-')} {new Date(bill.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             <span>INVOICE {bill.billNumber || 'PREVIEW'}</span>
           </div>
+          <div className="flex justify-between items-center text-[15px] print:text-[15px] font-[900] font-black text-black mb-1 uppercase">
+            <span>{bill.tableNo ? `TABLE: ${bill.tableNo}` : ''}</span>
+            <span>{bill.billType || ''}</span>
+          </div>
           {bill.customerName && (
              <div className="text-[15px] print:text-[15px] font-[900] font-black text-black mb-1">
                CUSTOMER: {bill.customerName}
