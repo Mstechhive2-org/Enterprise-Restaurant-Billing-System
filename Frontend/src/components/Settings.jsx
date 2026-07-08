@@ -57,9 +57,15 @@ const Settings = ({ user, setUser }) => {
       localStorage.setItem('restaurantSettings', JSON.stringify(settings));
       try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
+        const tenantDb = localStorage.getItem('resto_db_name') || '';
+        const token = localStorage.getItem('accessToken') || '';
         await fetch(`${API_BASE_URL}/config/info`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Tenant-DB': tenantDb,
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ restaurantSettings: settings })
         });
       } catch (e) {}

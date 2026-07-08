@@ -70,7 +70,10 @@ const LicenseScreen = ({ onValidLicense }) => {
           const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
           await fetch(`${API_BASE_URL}/config/info`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Tenant-DB': data.databaseName || localStorage.getItem('resto_db_name') || ''
+            },
             body: JSON.stringify({ licenseExpiry: data.validUntil })
           });
         } catch (e) {}

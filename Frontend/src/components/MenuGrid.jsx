@@ -113,7 +113,7 @@ const MenuGrid = ({ onSelectItem, searchTerm = '' }) => {
     <div className="flex flex-col h-full bg-surface overflow-hidden">
       {/* Top Bar: Categories */}
       <div className="p-4 border-b border-border bg-surface z-10 flex flex-col gap-4 shrink-0">
-        <div className="flex items-center gap-4 overflow-x-auto pb-2 custom-scrollbar">
+        <div className="flex items-center gap-4 overflow-x-auto pb-2 category-scroll">
           {categoryOptions.map(cat => (
             <button 
               key={cat}

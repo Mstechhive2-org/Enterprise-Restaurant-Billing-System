@@ -63,7 +63,11 @@ const BillingPage = ({ initialTable, onOrderUpdate, onNavigate, userRole = 'Admi
     const syncSpacesFromBackend = async () => {
       try {
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
-        const res = await fetch(`${API_BASE_URL}/config/info`);
+        const res = await fetch(`${API_BASE_URL}/config/info`, {
+          headers: {
+            'X-Tenant-DB': localStorage.getItem('resto_db_name') || ''
+          }
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.spaces && Array.isArray(data.spaces) && data.spaces.length > 0) {
