@@ -97,7 +97,10 @@ api.interceptors.response.use(
     }
 
     // Handle 403 (Forbidden) - Token expired -> Try Refresh
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    // CRITICAL FIX: Skip refresh logic for auth endpoints (login/register/refresh).
+    // A 403 from /auth/login means "max sessions reached" and MUST be shown to the user!
+    const isAuthEndpoint = originalRequest.url?.includes('/auth/');
+    if (error.response?.status === 403 && !originalRequest._retry && !isAuthEndpoint) {
       if (isRefreshing) {
         // If already refreshing, queue this request
         return new Promise((resolve, reject) => {
