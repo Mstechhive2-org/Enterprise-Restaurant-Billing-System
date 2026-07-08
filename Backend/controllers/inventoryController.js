@@ -2,13 +2,14 @@ import InventoryItemDefault from '../models/InventoryItem.js';
 import RecipeDefault from '../models/Recipe.js';
 import StockLogDefault from '../models/StockLog.js';
 import MenuDefault from '../models/Menu.js';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 // Helper to get models from request (for multi-tenancy)
 const getModels = (req) => ({
-  InventoryItem: req.models?.InventoryItem || InventoryItemDefault,
-  Recipe: req.models?.Recipe || RecipeDefault,
-  StockLog: req.models?.StockLog || StockLogDefault,
-  Menu: req.models?.Menu || MenuDefault
+  InventoryItem: getTenantModel(req, 'InventoryItem', InventoryItemDefault),
+  Recipe: getTenantModel(req, 'Recipe', RecipeDefault),
+  StockLog: getTenantModel(req, 'StockLog', StockLogDefault),
+  Menu: getTenantModel(req, 'Menu', MenuDefault)
 });
 
 // 1. Get all inventory items

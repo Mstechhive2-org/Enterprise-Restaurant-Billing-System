@@ -42,7 +42,10 @@ const LicenseScreen = ({ onValidLicense }) => {
             const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
             const setupResponse = await fetch(`${API_BASE_URL}/config/setup`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Tenant-DB': data.databaseName
+              },
               body: JSON.stringify({
                 databaseName: data.databaseName,
                 username: data.restaurantName,

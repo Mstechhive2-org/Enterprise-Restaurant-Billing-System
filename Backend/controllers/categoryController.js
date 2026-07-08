@@ -1,8 +1,9 @@
 import CategoryDefault from '../models/Category.js';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 export const getAllCategories = async (req, res) => {
   try {
-    const Category = req.models?.Category || CategoryDefault;
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     const categories = await Category.find({ isActive: true }).sort({ sortOrder: 1, name: 1 });
     res.status(200).json(categories);
   } catch (error) {
@@ -12,7 +13,7 @@ export const getAllCategories = async (req, res) => {
 
 export const getAllCategoriesAdmin = async (req, res) => {
   try {
-    const Category = req.models?.Category || CategoryDefault;
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     const categories = await Category.find().sort({ sortOrder: 1, name: 1 });
     res.status(200).json(categories);
   } catch (error) {
@@ -22,7 +23,7 @@ export const getAllCategoriesAdmin = async (req, res) => {
 
 export const createCategory = async (req, res) => {
   try {
-    const Category = req.models?.Category || CategoryDefault;
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     const category = new Category(req.body);
     await category.save();
     res.status(201).json(category);
@@ -33,7 +34,7 @@ export const createCategory = async (req, res) => {
 
 export const updateCategory = async (req, res) => {
   try {
-    const Category = req.models?.Category || CategoryDefault;
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     const category = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
@@ -46,7 +47,7 @@ export const updateCategory = async (req, res) => {
 
 export const deleteCategory = async (req, res) => {
   try {
-    const Category = req.models?.Category || CategoryDefault;
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });

@@ -1,5 +1,6 @@
 import MenuDefault from '../models/Menu.js';
 import CategoryDefault from '../models/Category.js';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 const emitSocketEvent = (req, eventName, data) => {
   try {
@@ -20,7 +21,7 @@ const emitSocketEvent = (req, eventName, data) => {
 
 export const getAllMenuItems = async (req, res) => {
   try {
-    const Menu = req.models?.Menu || MenuDefault;
+    const Menu = getTenantModel(req, 'Menu', MenuDefault);
     const items = await Menu.find({ isAvailable: true }).populate('category', 'name');
     res.status(200).json(items);
   } catch (error) {
@@ -30,8 +31,8 @@ export const getAllMenuItems = async (req, res) => {
 
 export const addMenuItem = async (req, res) => {
   try {
-    const Menu = req.models?.Menu || MenuDefault;
-    const Category = req.models?.Category || CategoryDefault;
+    const Menu = getTenantModel(req, 'Menu', MenuDefault);
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     let categoryData = req.body.category;
 
     // If category is a string, find the category by name
@@ -57,8 +58,8 @@ export const addMenuItem = async (req, res) => {
 
 export const updateMenuItem = async (req, res) => {
   try {
-    const Menu = req.models?.Menu || MenuDefault;
-    const Category = req.models?.Category || CategoryDefault;
+    const Menu = getTenantModel(req, 'Menu', MenuDefault);
+    const Category = getTenantModel(req, 'Category', CategoryDefault);
     let updateData = req.body;
 
     // If category is a string, find the category by name
@@ -85,7 +86,7 @@ export const updateMenuItem = async (req, res) => {
 
 export const deleteMenuItem = async (req, res) => {
   try {
-    const Menu = req.models?.Menu || MenuDefault;
+    const Menu = getTenantModel(req, 'Menu', MenuDefault);
     const deletedItem = await Menu.findByIdAndDelete(req.params.id);
     if (!deletedItem) {
       return res.status(404).json({ message: 'Menu item not found' });
@@ -99,7 +100,7 @@ export const deleteMenuItem = async (req, res) => {
 
 export const deleteAllMenuItems = async (req, res) => {
   try {
-    const Menu = req.models?.Menu || MenuDefault;
+    const Menu = getTenantModel(req, 'Menu', MenuDefault);
     await Menu.deleteMany({});
     emitSocketEvent(req, 'menuUpdated', { action: 'deleteAll' });
     res.status(200).json({ message: 'All menu items deleted successfully' });

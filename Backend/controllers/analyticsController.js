@@ -1,11 +1,12 @@
 import BillDefault from '../models/Bill.js';
 import ExpenseDefault from '../models/Expense.js';
 import ExcelJS from 'exceljs';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 // Get comprehensive analytics
 export const getAnalytics = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { month, year, days } = req.query;
     
     let startDate, endDate;
@@ -292,7 +293,7 @@ export const getAnalytics = async (req, res) => {
 // Download daily report in CSV format
 export const downloadDailyReportCSV = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { month, year, days } = req.query;
 
     let startDate, endDate, periodName;
@@ -346,7 +347,7 @@ export const downloadDailyReportCSV = async (req, res) => {
 // Download monthly report in Excel format
 export const downloadMonthlyReportExcel = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { month, year } = req.query;
 
     let startDate, endDate, periodName;
@@ -551,8 +552,8 @@ export const downloadMonthlyReportExcel = async (req, res) => {
 // Get DayBook (Day-wise Bill)
 export const getDayBook = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
-    const Expense = req.models?.Expense || ExpenseDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
+    const Expense = getTenantModel(req, 'Expense', ExpenseDefault);
     const { date } = req.query;
     let startDate, endDate;
 
@@ -684,8 +685,8 @@ export const getDayBook = async (req, res) => {
 
 export const exportDayBookExcel = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
-    const Expense = req.models?.Expense || ExpenseDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
+    const Expense = getTenantModel(req, 'Expense', ExpenseDefault);
     const { date, restaurantName } = req.query;
     if (!date) {
       return res.status(400).json({ message: 'Date is required' });

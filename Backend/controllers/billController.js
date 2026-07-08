@@ -1,6 +1,7 @@
 import BillDefault from '../models/Bill.js';
 import cache from '../utils/cache.js';
 import { deductStockForBillItems } from './inventoryController.js';
+import { getTenantModel, handleTenantError } from '../utils/tenantHelper.js';
 
 const emitSocketEvent = (req, eventName, data) => {
   try {
@@ -22,7 +23,7 @@ const emitSocketEvent = (req, eventName, data) => {
 // Get active order for a table
 export const getActiveOrder = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { tableNo } = req.params;
     const order = await Bill.findOne({ 
       tableNo, 
@@ -37,7 +38,7 @@ export const getActiveOrder = async (req, res) => {
 // Create or Update Order (Open Status)
 export const saveOrder = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { 
       tableNo, 
       items, 
@@ -143,7 +144,7 @@ export const saveOrder = async (req, res) => {
 // Generate Bill (Lock Order)
 export const generateBill = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const { discount, tax } = req.body;
 
@@ -193,7 +194,7 @@ export const generateBill = async (req, res) => {
 // Transfer Bill to a new Table
 export const transferTable = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const { newTableNo } = req.body;
 
@@ -230,7 +231,7 @@ export const transferTable = async (req, res) => {
 // Settle Bill (Payment) - Saves bill to history (status: 'Paid')
 export const settleBill = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const { paymentMode, splitPayments, upiApp } = req.body;
 
@@ -278,7 +279,7 @@ export const settleBill = async (req, res) => {
 // Get all bills (for history) with pagination support - Optimized for 150+ orders/day
 export const getBills = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 20, 100); // Default 20 per page, max 100 for performance
     const skip = (page - 1) * limit;
@@ -352,7 +353,7 @@ export const getBills = async (req, res) => {
 // Get a single bill by ID (with all details for invoice)
 export const getBillById = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const bill = await Bill.findById(id);
     if (!bill) {
@@ -368,7 +369,7 @@ export const getBillById = async (req, res) => {
 // Delete a bill
 export const deleteBill = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const deletedBill = await Bill.findByIdAndDelete(id);
     if (!deletedBill) {
@@ -387,7 +388,7 @@ export const deleteBill = async (req, res) => {
 // Get all open/billed orders (optimized for performance with caching)
 export const getOpenOrders = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const cacheKey = cache.getCacheKey('openOrders');
     const cached = cache.get(cacheKey);
     if (cached) {
@@ -415,7 +416,7 @@ export const getOpenOrders = async (req, res) => {
 // Get daily statistics - Optimized with caching for 150+ orders/day
 export const getDailyStats = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     // Use UTC dates to avoid timezone issues in production
     // MongoDB stores dates in UTC, so we need to query in UTC
     const now = new Date();
@@ -667,7 +668,7 @@ export const getDailyStats = async (req, res) => {
 // Generate KOT for a bill (only for new/changed items)
 export const generateKOT = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
     const { items: currentCart } = req.body; // Frontend sends the current cart to be safe
 
@@ -725,7 +726,7 @@ export const generateKOT = async (req, res) => {
 // Get all KOTs generated today (or specific date) across all bills
 export const getTodayKOTs = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { date, search } = req.query;
 
     let targetDate = new Date();
@@ -784,7 +785,7 @@ export const getTodayKOTs = async (req, res) => {
 // Reopen a Billed order back to Open state
 export const reopenOrder = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
 
     const bill = await Bill.findById(id);
@@ -817,7 +818,7 @@ export const reopenOrder = async (req, res) => {
 // Cancel an entire order
 export const cancelOrder = async (req, res) => {
   try {
-    const Bill = req.models?.Bill || BillDefault;
+    const Bill = getTenantModel(req, 'Bill', BillDefault);
     const { id } = req.params;
 
     const bill = await Bill.findById(id);

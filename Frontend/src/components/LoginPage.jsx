@@ -252,7 +252,13 @@ const LoginPage = ({ onLoginSuccess }) => {
                     if (window.confirm('Are you sure you want to reset your license? You will need to re-enter your license key.')) {
                       try {
                         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002/api';
-                        await fetch(`${API_BASE_URL}/config/reset`, { method: 'POST' });
+                        await fetch(`${API_BASE_URL}/config/reset`, {
+                          method: 'POST',
+                          headers: {
+                            'X-Tenant-DB': localStorage.getItem('resto_db_name') || '',
+                            'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+                          }
+                        });
                         // Keep 'resto_hwid' so the computer's unique hardware fingerprint remains unchanged!
                         
                         // Clear ALL restaurant-specific data to prevent old restaurant names from bleeding through

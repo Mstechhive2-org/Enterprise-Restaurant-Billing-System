@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -61,9 +62,37 @@ const io = new Server(server, {
 app.locals.io = io;
 
 io.on('connection', (socket) => {
-  socket.on('joinTenant', (tenantDb) => {
-    if (tenantDb) {
+  socket.on('joinTenant', (data) => {
+    let tenantDb = null;
+    let token = null;
+    if (data && typeof data === 'object') {
+      tenantDb = data.tenantDb;
+      token = data.token;
+    } else {
+      tenantDb = data;
+    }
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        if (decoded && decoded.db) {
+          tenantDb = decoded.db;
+        }
+      } catch (err) {
+        console.error('[Socket] Failed to verify joinTenant token:', err.message);
+        return; // Reject join
+      }
+    }
+
+    const isCloud = !!(process.env.RENDER || process.env.VERCEL || process.env.VERCEL_ENV || process.env.NODE_ENV === 'production');
+    if (isCloud && !token) {
+      console.warn('[Socket] Refused unauthenticated socket join on cloud');
+      return;
+    }
+
+    if (tenantDb && tenantDb !== 'undefined' && tenantDb !== 'null') {
       socket.join(tenantDb);
+      console.log(`[Socket] Securely joined room: ${tenantDb}`);
     }
   });
 });

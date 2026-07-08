@@ -83,8 +83,9 @@ const FloorManagement = ({ onNavigate }) => {
     const socketUrl = API_BASE_URL.replace('/api', '');
     const socket = io(socketUrl);
     const tenantDb = localStorage.getItem('resto_db_name');
+    const token = localStorage.getItem('accessToken');
     if (tenantDb) {
-      socket.emit('joinTenant', tenantDb);
+      socket.emit('joinTenant', { tenantDb, token });
     }
     socket.on('orderUpdated', () => fetchOrders());
     socket.on('tableTransferred', () => fetchOrders());

@@ -1,9 +1,10 @@
 import ExpenseDefault from '../models/Expense.js';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 // Add new expense
 export const addExpense = async (req, res) => {
   try {
-    const Expense = req.models?.Expense || ExpenseDefault;
+    const Expense = getTenantModel(req, 'Expense', ExpenseDefault);
     const { amount, description, category, paymentMode, date } = req.body;
     
     const newExpense = new Expense({
@@ -25,7 +26,7 @@ export const addExpense = async (req, res) => {
 // Get all expenses (with optional filtering by date range)
 export const getExpenses = async (req, res) => {
   try {
-    const Expense = req.models?.Expense || ExpenseDefault;
+    const Expense = getTenantModel(req, 'Expense', ExpenseDefault);
     const { startDate, endDate } = req.query;
     let query = {};
     
@@ -46,7 +47,7 @@ export const getExpenses = async (req, res) => {
 // Delete an expense
 export const deleteExpense = async (req, res) => {
   try {
-    const Expense = req.models?.Expense || ExpenseDefault;
+    const Expense = getTenantModel(req, 'Expense', ExpenseDefault);
     const { id } = req.params;
     const deletedExpense = await Expense.findByIdAndDelete(id);
     

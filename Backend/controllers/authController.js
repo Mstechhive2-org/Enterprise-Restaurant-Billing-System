@@ -1,48 +1,23 @@
 import UserDefault from '../models/User.js';
 import jwt from 'jsonwebtoken';
-import { getTenantModels } from '../utils/tenantManager.js';
-
-// Helper: Determine correct database from username
-const getDatabaseForUsername = (username) => {
-  const uname = (username || '').toLowerCase();
-  if (uname.includes('mm') || uname === 'mm restaurants' || uname === 'mm restaurant') {
-    return { databaseName: 'client_mm_db', licenseKey: 'MSBILL-MM01-REST-2026' };
-  } else if (uname.includes('demo')) {
-    return { databaseName: 'client_demo_db', licenseKey: 'MSBILL-DEMO-TEAM-2026' };
-  } else if (uname.includes('saif')) {
-    return { databaseName: 'client_saif_special_db', licenseKey: 'MSBILL-39BB-2AD1-687F' };
-  } else if (uname.includes('star')) {
-    return { databaseName: 'client_starchicken_db', licenseKey: 'MSBILL-STAR-CHKN-2026' };
-  } else if (uname.includes('maheer')) {
-    return { databaseName: 'client_maheer_db', licenseKey: 'MSBILL-MAH1-EER2-2026' };
-  }
-  return null; // Use whatever the tenant header says
-};
+import { getTenantModel, handleTenantError } from '../utils/tenantHelper.js';
 
 export const login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    // CRITICAL FIX: Determine the correct database from the username FIRST,
-    // then authenticate against THAT database — not the one from the X-Tenant-DB header.
-    // This prevents "Invalid credentials" when a Desktop (.exe) terminal was activated
-    // with a different restaurant's license key (e.g., Saif's license but MM's admin login).
-    const dbMapping = getDatabaseForUsername(username);
+    // PURE MULTI-TENANT: The tenant middleware has already resolved the correct
+    // database from the X-Tenant-DB header (set during license activation) or
+    // from the JWT token. We NEVER hardcode username→database mappings.
     let User;
-    let databaseName;
-    let licenseKey;
-
-    if (dbMapping) {
-      // We know which database this username belongs to — connect directly
-      const tenantModels = await getTenantModels(dbMapping.databaseName);
-      User = tenantModels?.User || req.models?.User || UserDefault;
-      databaseName = dbMapping.databaseName;
-      licenseKey = dbMapping.licenseKey;
-    } else {
-      // Unknown username pattern — use the tenant header (original behavior)
-      User = req.models?.User || UserDefault;
-      databaseName = req.headers['x-tenant-db'] || 'client_maheer_db';
-      licenseKey = 'MSBILL-MAH1-EER2-2026';
+    try {
+      User = getTenantModel(req, 'User', UserDefault);
+    } catch (err) {
+      return handleTenantError(err, res);
     }
+
+    // The database name comes from the resolved tenant connection
+    const databaseName = req.models?.connection?.name || req.headers['x-tenant-db'] || '';
+    const licenseKey = req.headers['x-license-key'] || '';
 
     const user = await User.findOne({ username });
     if (!user || !(await user.comparePassword(password))) {
@@ -122,9 +97,6 @@ export const login = async (req, res) => {
 
     await user.save();
 
-    // databaseName and licenseKey are already determined at the top of this function
-    // from getDatabaseForUsername() — no need to re-check here
-
     res.status(200).json({
       accessToken,
       refreshToken,
@@ -133,8 +105,7 @@ export const login = async (req, res) => {
         username: user.username,
         role: user.role
       },
-      databaseName,
-      licenseKey
+      databaseName
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -144,7 +115,8 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     const userId = req.user.id || req.user._id;
     const token = req.headers['authorization']?.split(' ')[1];
 
@@ -168,7 +140,8 @@ export const logout = async (req, res) => {
 
 export const logoutAll = async (req, res) => {
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     const userId = req.user.id || req.user._id;
 
     if (userId) {
@@ -197,7 +170,8 @@ export const refreshToken = async (req, res) => {
   }
 
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
@@ -223,18 +197,18 @@ export const refreshToken = async (req, res) => {
       return res.status(403).json({ message: 'Invalid refresh token (session expired or logged out)' });
     }
 
-    // Generate new access token
+    // Generate new access token — CRITICAL: Include db field for tenant isolation!
     const newAccessToken = jwt.sign(
-      { id: decoded.id, role: decoded.role },
+      { id: decoded.id, role: decoded.role, db: decoded.db },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '3650d' }
     );
 
-    // Generate new refresh token
+    // Generate new refresh token — CRITICAL: Include db field for tenant isolation!
     const newRefreshToken = jwt.sign(
-      { id: decoded.id, role: decoded.role },
+      { id: decoded.id, role: decoded.role, db: decoded.db },
       process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      { expiresIn: '30d' }
+      { expiresIn: '3650d' }
     );
 
     // Update the session with new tokens (Token Rotation)
@@ -256,7 +230,8 @@ export const refreshToken = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     const { username } = req.body;
     const userId = req.user.id || req.user._id;
 
@@ -289,7 +264,8 @@ export const updateProfile = async (req, res) => {
 export const register = async (req, res) => {
   const { username, password, role } = req.body;
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     const user = new User({ username, password, role: role || 'Cashier' });
     await user.save();
     res.status(201).json({ message: 'User created successfully', user: { id: user._id, username: user.username, role: user.role } });
@@ -300,7 +276,8 @@ export const register = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     const users = await User.find({}, '-password');
     res.json(users);
   } catch (error) {
@@ -310,7 +287,8 @@ export const getUsers = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     if (req.params.id === req.user?.id) {
       return res.status(400).json({ message: 'Cannot delete your own admin account.' });
     }
@@ -327,7 +305,8 @@ export const createAdmin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
 
@@ -386,7 +365,8 @@ export const setupAdmin = async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const User = req.models?.User || UserDefault;
+    let User;
+    try { User = getTenantModel(req, 'User', UserDefault); } catch (err) { return handleTenantError(err, res); }
     // Check if any admin already exists
     const existingAdmin = await User.findOne({ role: 'Admin' });
     if (existingAdmin) {

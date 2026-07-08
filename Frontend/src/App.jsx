@@ -15,7 +15,6 @@ const KOTHistory = React.lazy(() => import('./components/KOTHistory'));
 const LicenseScreen = React.lazy(() => import('./components/LicenseScreen'));
 const DayBook = React.lazy(() => import('./components/DayBook'));
 const InventoryManagement = React.lazy(() => import('./components/InventoryManagement'));
-import SessionManager from './components/SessionManager';
 import { LogOut, LayoutDashboard, History, User, UtensilsCrossed, ClipboardList, BarChart3, LayoutGrid, Home, Settings as SettingsIcon, Truck, Wallet, Printer, BookOpen, Lock, ShieldAlert, CalendarClock, X, Phone, Menu, Receipt, Clock, Package } from 'lucide-react';
 import { getOpenOrders } from './api/billing';
 import { logoutUser } from './api/auth';

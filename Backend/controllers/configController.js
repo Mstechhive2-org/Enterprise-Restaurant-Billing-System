@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import UserDefault from '../models/User.js';
 import SettingDefault from '../models/Setting.js';
 import { getTenantModels } from '../utils/tenantManager.js';
+import { getTenantModel } from '../utils/tenantHelper.js';
 
 export const setupDatabase = async (req, res) => {
   try {
@@ -89,7 +90,7 @@ export const resetLicense = async (req, res) => {
 
 export const getRestaurantInfo = async (req, res) => {
   try {
-    const Setting = req.models?.Setting || SettingDefault;
+    const Setting = getTenantModel(req, 'Setting', SettingDefault);
     const expiryDoc = await Setting.findOne({ key: 'licenseExpiry' });
     const settingsDoc = await Setting.findOne({ key: 'restaurantSettings' });
     const spacesDoc = await Setting.findOne({ key: 'spaces' });
@@ -116,7 +117,7 @@ export const getRestaurantInfo = async (req, res) => {
 
 export const updateRestaurantInfo = async (req, res) => {
   try {
-    const Setting = req.models?.Setting || SettingDefault;
+    const Setting = getTenantModel(req, 'Setting', SettingDefault);
     const { licenseExpiry, restaurantSettings, spaces } = req.body;
     if (licenseExpiry) {
       await Setting.findOneAndUpdate({ key: 'licenseExpiry' }, { value: licenseExpiry }, { upsert: true });
