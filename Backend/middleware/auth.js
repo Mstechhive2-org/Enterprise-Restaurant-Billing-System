@@ -22,21 +22,18 @@ const authenticateToken = async (req, res, next) => {
       return res.status(403).json({ message: 'Invalid token' });
     }
 
-    // CRITICAL FIX: Determine the correct User model with multiple fallbacks:
-    // 1. Use req.models?.User (from tenant middleware via X-Tenant-DB header) — best case
-    // 2. Use decoded.db from the JWT token itself — works for old Desktop .exe apps
-    //    that don't send the X-Tenant-DB header
-    // 3. Fall back to default User model — last resort
-    let TenantUser = req.models?.User;
+    // CRITICAL SECURITY FIX: For all authenticated requests, strictly use the database
+    // specified in the cryptographically signed JWT token (decoded.db).
+    // Never trust the client-side X-Tenant-DB header, as it can be modified or missing!
+    let TenantUser = null;
 
-    if (!TenantUser && decoded.db) {
-      // The JWT contains the database name — connect to it directly
+    if (decoded.db) {
       try {
         const tenantModels = await getTenantModels(decoded.db);
         if (tenantModels?.User) {
-          TenantUser = tenantModels.User;
-          // Also populate req.models for downstream controllers
           req.models = tenantModels;
+          TenantUser = tenantModels.User;
+          console.log(`[Auth] Strictly routed request to tenant DB: ${decoded.db} based on JWT`);
         }
       } catch (err) {
         console.error('[Auth] Failed to connect to tenant DB from JWT:', err.message);
@@ -44,7 +41,8 @@ const authenticateToken = async (req, res, next) => {
     }
 
     if (!TenantUser) {
-      TenantUser = User; // Final fallback to default database
+      // Fallback: If token has no db field (old token), use req.models from header or default User
+      TenantUser = req.models?.User || User;
     }
 
     const user = await TenantUser.findById(decoded.id);

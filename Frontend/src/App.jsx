@@ -274,8 +274,6 @@ function App() {
 
   return (
     <div className="h-screen flex bg-background text-text-main font-sans overflow-hidden relative">
-      {/* Session Manager - automatically logs out on token expiry */}
-      <SessionManager />
 
       {/* Mobile Backdrop Overlay */}
       {mobileMenuOpen && (
